@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, RefreshCw, AlertCircle, Send, Upload, X, FileJson, ChevronDown, ChevronRight, Hash, Type, Heading, Paperclip, Image as ImageIcon } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle, Send, Upload, X, FileJson, Type, Paperclip, Image as ImageIcon } from 'lucide-react';
 import { getFeed, searchInsights, publishMessage } from '../../api/feed';
 import { getStatus } from '../../api/status';
 import { ChatMessage } from './ChatMessage';
+import { SchemaForm } from './SchemaForm';
 import { useAppStore } from '../../stores/appStore';
+import { useParsedSchemas } from '../../hooks/useSchemas';
 import { Button } from '../ui/Button';
 import { clsx } from 'clsx';
 
@@ -12,22 +14,10 @@ interface ChatFeedProps {
   searchQuery: string;
 }
 
-const MESSAGE_TYPES = [
-  { value: 'note', label: 'Note' },
-  { value: 'query', label: 'Query' },
-  { value: 'response', label: 'Response' },
-  { value: 'task', label: 'Task' },
-  { value: 'code', label: 'Code' },
-  { value: 'link', label: 'Link' },
-  { value: 'presence', label: 'Presence' },
-];
-
 export function ChatFeed({ searchQuery }: ChatFeedProps) {
-  const [messageText, setMessageText] = useState('');
-  const [messageType, setMessageType] = useState('note');
+  const [messageType, setMessageType] = useState('message');
   const [messageTopic, setMessageTopic] = useState('');
-  const [messageTitle, setMessageTitle] = useState('');
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [formValues, setFormValues] = useState<Record<string, unknown>>({});
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [showJsonMode, setShowJsonMode] = useState(false);
   const [jsonText, setJsonText] = useState('');
@@ -43,6 +33,15 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  // Fetch schemas dynamically
+  const { schemas, isLoading: schemasLoading } = useParsedSchemas();
+  const currentSchema = schemas.find((s) => s.contentType === messageType);
+
+  // Reset form values when message type changes
+  useEffect(() => {
+    setFormValues({});
+  }, [messageType]);
 
   const MAX_ATTACHMENT_SIZE = 48 * 1024; // 48KB limit (egregore has ~64KB message limit)
 
@@ -100,18 +99,29 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
         return;
       }
     } else {
-      if (!messageText.trim()) return;
-      const content: { type: string; text?: string; title?: string; question?: string; attachment?: unknown; [key: string]: unknown } = {
-        type: messageType,
-        text: messageText.trim(),
-      };
-      if (messageTitle.trim()) content.title = messageTitle.trim();
-
-      // For query type, use 'question' field instead of 'text'
-      if (messageType === 'query') {
-        content.question = content.text;
-        delete content.text;
+      // Validate required fields from schema
+      if (currentSchema) {
+        const requiredFields = currentSchema.fields.filter((f) => f.required);
+        for (const field of requiredFields) {
+          const value = formValues[field.name];
+          if (value === undefined || value === '' || (Array.isArray(value) && value.length === 0)) {
+            setError(`${field.label} is required`);
+            return;
+          }
+        }
+      } else {
+        // Fallback for unknown types: require some content
+        const hasContent = Object.values(formValues).some(
+          (v) => v !== undefined && v !== '' && !(Array.isArray(v) && v.length === 0)
+        );
+        if (!hasContent) {
+          setError('Message content is required');
+          return;
+        }
       }
+
+      // Build content from form values
+      const content: Record<string, unknown> = { type: messageType, ...formValues };
 
       // Include attachment if present
       if (attachment) {
@@ -125,15 +135,15 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
 
       // topic and references go at top level, not in content
       await sendMessage({
-        content,
+        content: content as Parameters<typeof publishMessage>[0]['content'],
         topic: messageTopic.trim() || undefined,
         references: replyTo ? [replyTo] : undefined,
       });
-      setMessageText('');
+
+      // Reset all fields
+      setFormValues({});
       setMessageTopic('');
-      setMessageTitle('');
       setReplyTo(null);
-      setShowAdvanced(false);
       setAttachment(null);
     }
   }
@@ -312,69 +322,68 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
             />
           </div>
         ) : (
-          /* Structured text mode */
+          /* Structured text mode with dynamic schema form */
           <div className="space-y-2">
-            {/* Type and topic row */}
+            {/* Type selector row */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1">
                 <Type className="w-3 h-3 text-text-faint" />
                 <select
                   value={messageType}
                   onChange={(e) => setMessageType(e.target.value)}
+                  disabled={schemasLoading}
                   className={clsx(
                     'px-2 py-1 rounded text-xs',
                     'bg-bg-tertiary text-text border border-border',
-                    'focus:outline-none focus:ring-1 focus:ring-accent'
+                    'focus:outline-none focus:ring-1 focus:ring-accent',
+                    'disabled:opacity-50'
                   )}
                 >
-                  {MESSAGE_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
+                  {schemas.length > 0 ? (
+                    schemas.map((s) => (
+                      <option key={s.schemaId} value={s.contentType}>
+                        {s.contentType.charAt(0).toUpperCase() + s.contentType.slice(1)}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="message">Message</option>
+                  )}
                 </select>
               </div>
-
-              <div className="flex items-center gap-1 flex-1">
-                <Hash className="w-3 h-3 text-text-faint" />
-                <input
-                  type="text"
-                  value={messageTopic}
-                  onChange={(e) => setMessageTopic(e.target.value)}
-                  placeholder="topic (optional)"
-                  className={clsx(
-                    'flex-1 px-2 py-1 rounded text-xs',
-                    'bg-bg-tertiary text-text border border-border',
-                    'focus:outline-none focus:ring-1 focus:ring-accent',
-                    'placeholder:text-text-faint'
-                  )}
-                />
-              </div>
-
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-1 text-xs text-text-muted hover:text-text"
-              >
-                {showAdvanced ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                More
-              </button>
+              {currentSchema?.description && (
+                <span className="text-xs text-text-faint truncate flex-1">
+                  {currentSchema.description}
+                </span>
+              )}
             </div>
 
-            {/* Advanced options */}
-            {showAdvanced && (
-              <div className="flex items-center gap-2">
-                <Heading className="w-3 h-3 text-text-faint" />
-                <input
-                  type="text"
-                  value={messageTitle}
-                  onChange={(e) => setMessageTitle(e.target.value)}
-                  placeholder="Title (optional)"
-                  className={clsx(
-                    'flex-1 px-2 py-1 rounded text-xs',
-                    'bg-bg-tertiary text-text border border-border',
-                    'focus:outline-none focus:ring-1 focus:ring-accent',
-                    'placeholder:text-text-faint'
-                  )}
-                />
-              </div>
+            {/* Dynamic schema form */}
+            {currentSchema ? (
+              <SchemaForm
+                schema={currentSchema}
+                values={formValues}
+                onChange={setFormValues}
+                topic={messageTopic}
+                onTopicChange={setMessageTopic}
+                disabled={isSending}
+                onSubmit={handleSend}
+              />
+            ) : (
+              /* Fallback for unknown types */
+              <textarea
+                value={typeof formValues.text === 'string' ? formValues.text : ''}
+                onChange={(e) => setFormValues({ ...formValues, text: e.target.value })}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a message... (Enter to send)"
+                rows={2}
+                className={clsx(
+                  'w-full px-3 py-2 rounded-md text-sm',
+                  'bg-bg-tertiary text-text border border-border',
+                  'focus:outline-none focus:ring-2 focus:ring-accent',
+                  'resize-none placeholder:text-text-faint',
+                  'min-h-[60px] max-h-[120px]'
+                )}
+              />
             )}
 
             {/* Attachment preview */}
@@ -401,32 +410,8 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
               </div>
             )}
 
-            {/* Message input row */}
-            <div className="flex items-end gap-2">
-              <textarea
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={messageType === 'query' ? 'Ask a question...' : 'Type a message... (Enter to send)'}
-                rows={1}
-                className={clsx(
-                  'flex-1 px-3 py-2 rounded-md text-sm',
-                  'bg-bg-tertiary text-text border border-border',
-                  'focus:outline-none focus:ring-2 focus:ring-accent',
-                  'resize-none placeholder:text-text-faint',
-                  'min-h-[40px] max-h-[120px]'
-                )}
-                style={{
-                  height: 'auto',
-                  overflow: 'hidden',
-                }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = Math.min(target.scrollHeight, 120) + 'px';
-                }}
-              />
-
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-2">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -464,7 +449,7 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
               <Button
                 size="sm"
                 onClick={handleSend}
-                disabled={isSending || !messageText.trim()}
+                disabled={isSending}
               >
                 {isSending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
