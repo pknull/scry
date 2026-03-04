@@ -273,17 +273,16 @@ export function SettingsPanel() {
 
             <SettingRow
               label="Gossip Bind Address"
-              description="Which interface to accept peer connections on."
+              description="IP address to bind for peer connections. Use 127.0.0.1 for local only, 0.0.0.0 for all interfaces, or a specific IP."
               warning={(config.gossip_bind ?? '127.0.0.1') === '127.0.0.1' ? 'Loopback only - external peers cannot connect to this node' : undefined}
             >
-              <select
+              <Input
+                type="text"
                 value={config.gossip_bind ?? '127.0.0.1'}
                 onChange={(e) => updateConfig('gossip_bind', e.target.value)}
-                className="px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
-              >
-                <option value="127.0.0.1">Localhost only (127.0.0.1)</option>
-                <option value="0.0.0.0">All interfaces (0.0.0.0)</option>
-              </select>
+                placeholder="0.0.0.0"
+                className="w-40"
+              />
             </SettingRow>
 
             <SettingRow
