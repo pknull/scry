@@ -273,8 +273,8 @@ export function SettingsPanel() {
 
             <SettingRow
               label="Gossip Bind Address"
-              description="IP address to bind for peer connections. Use 127.0.0.1 for local only, 0.0.0.0 for all interfaces, or a specific IP."
-              warning={(config.gossip_bind ?? '127.0.0.1') === '127.0.0.1' ? 'Loopback only - external peers cannot connect to this node' : undefined}
+              description="IP address for peer connections. Examples: 127.0.0.1 (local only), 0.0.0.0 (all interfaces), or a specific IP like your Tailscale address."
+              warning={(config.gossip_bind ?? '127.0.0.1') === '127.0.0.1' ? 'Loopback only - external peers cannot connect' : undefined}
             >
               <Input
                 type="text"
