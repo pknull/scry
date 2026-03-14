@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { Reply, Download, Paperclip } from 'lucide-react';
+import { Reply, Download, Paperclip, Activity } from 'lucide-react';
 import type { Message } from '../../api/types';
 
 interface Attachment {
@@ -13,6 +13,7 @@ interface ChatMessageProps {
   message: Message;
   isOwn?: boolean;
   onReply?: (hash: string) => void;
+  onViewTrace?: (traceId: string) => void;
 }
 
 function formatTime(timestamp: string): string {
@@ -109,7 +110,7 @@ function getDisplayText(content: Record<string, unknown>): string {
   }
 }
 
-export function ChatMessage({ message, isOwn, onReply }: ChatMessageProps) {
+export function ChatMessage({ message, isOwn, onReply, onViewTrace }: ChatMessageProps) {
   const content = message.content as unknown as Record<string, unknown>;
   const text = getDisplayText(content);
   const authorName = getAuthorName(message.author);
@@ -117,6 +118,9 @@ export function ChatMessage({ message, isOwn, onReply }: ChatMessageProps) {
   const title = (content.title as string) || '';
   const topic = (content.topic as string) || '';
   const type = (content.type as string) || 'unknown';
+  const traceId =
+    (typeof message.trace_id === 'string' && message.trace_id) ||
+    (typeof content.trace_id === 'string' ? content.trace_id : null);
 
   if (!text && !title) {
     return null; // Skip empty messages
@@ -213,6 +217,15 @@ export function ChatMessage({ message, isOwn, onReply }: ChatMessageProps) {
             replying to {message.references[0].slice(0, 8)}...
           </div>
         )}
+        {type === 'task_result' && traceId && onViewTrace ? (
+          <button
+            onClick={() => onViewTrace(traceId)}
+            className="mt-2 inline-flex items-center gap-1 text-xs text-accent hover:text-accent-hover"
+          >
+            <Activity className="h-3.5 w-3.5" />
+            View Trace
+          </button>
+        ) : null}
       </div>
 
       {/* Actions */}
@@ -226,6 +239,15 @@ export function ChatMessage({ message, isOwn, onReply }: ChatMessageProps) {
             <Reply className="w-4 h-4" />
           </button>
         )}
+        {traceId && onViewTrace ? (
+          <button
+            onClick={() => onViewTrace(traceId)}
+            className="p-1 rounded hover:bg-bg-tertiary text-text-muted hover:text-accent"
+            title="View trace"
+          >
+            <Activity className="w-4 h-4" />
+          </button>
+        ) : null}
       </div>
     </div>
   );

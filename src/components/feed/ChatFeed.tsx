@@ -66,7 +66,7 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
     refetchInterval: 5000,
   });
 
-  const { ignoredAuthors } = useAppStore();
+  const { ignoredAuthors, setView, setSelectedTraceId } = useAppStore();
 
   // Filter out ignored authors and sort by timestamp (oldest first for chat view)
   const sortedMessages = [...(messages || [])]
@@ -261,6 +261,10 @@ export function ChatFeed({ searchQuery }: ChatFeedProps) {
                 message={msg}
                 isOwn={status?.identity === msg.author}
                 onReply={(hash) => setReplyTo(hash)}
+                onViewTrace={(traceId) => {
+                  setSelectedTraceId(traceId);
+                  setView('traces');
+                }}
               />
             ))}
             <div ref={messagesEndRef} />
