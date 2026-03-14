@@ -9,8 +9,10 @@ import { AuthorsSection } from './AuthorsSection';
 import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { ValidationMessage } from '../ui/ValidationMessage';
 import { clsx } from 'clsx';
 import type { MeshPeer } from '../../api/types';
+import { validatePeerAddress } from './validation';
 
 function formatAge(secs: number): string {
   if (secs < 60) return `${secs}s ago`;
@@ -56,7 +58,9 @@ function getStatusTextColor(status: MeshPeer['status']): string {
 export function PeersPanel() {
   const queryClient = useQueryClient();
   const [newPeerAddress, setNewPeerAddress] = useState('');
+  const [addPeerError, setAddPeerError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'mesh' | 'peers' | 'authors'>('mesh');
+  const newPeerAddressError = validatePeerAddress(newPeerAddress);
 
   const {
     data: peers,
@@ -96,9 +100,15 @@ export function PeersPanel() {
 
   const handleAddPeer = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (newPeerAddress.trim()) {
-      addPeerMutation.mutate(newPeerAddress.trim());
+    if (newPeerAddressError) {
+      return;
     }
+    setAddPeerError(null);
+    addPeerMutation.mutate(newPeerAddress.trim(), {
+      onError: (error) => {
+        setAddPeerError(error instanceof Error ? error.message : 'Failed to add peer');
+      },
+    });
   };
 
   if (peersLoading) {
@@ -349,12 +359,17 @@ export function PeersPanel() {
                 type="text"
                 placeholder="hostname:port or IP:port"
                 value={newPeerAddress}
-                onChange={(e) => setNewPeerAddress(e.target.value)}
+                onChange={(e) => {
+                  setNewPeerAddress(e.target.value);
+                  setAddPeerError(null);
+                }}
                 className="flex-1"
+                error={Boolean(newPeerAddressError)}
+                aria-invalid={Boolean(newPeerAddressError)}
               />
               <Button
                 type="submit"
-                disabled={!newPeerAddress.trim() || addPeerMutation.isPending}
+                disabled={Boolean(newPeerAddressError) || addPeerMutation.isPending}
               >
                 {addPeerMutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -364,12 +379,11 @@ export function PeersPanel() {
                 <span className="ml-2">Add</span>
               </Button>
             </form>
-            {addPeerMutation.isError && (
-              <p className="mt-2 text-sm text-error">
-                {addPeerMutation.error instanceof Error
-                  ? addPeerMutation.error.message
-                  : 'Failed to add peer'}
-              </p>
+            <ValidationMessage message={newPeerAddressError} />
+            {addPeerError && (
+              <div className="mt-2 rounded-md border border-error/30 bg-error/10 p-3">
+                <p className="text-sm text-error">{addPeerError}</p>
+              </div>
             )}
             <p className="mt-3 text-xs text-text-faint">
               Add the gossip address (host:port) of another egregore node to sync with.

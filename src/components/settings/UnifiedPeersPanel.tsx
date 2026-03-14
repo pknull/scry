@@ -11,8 +11,10 @@ import { useAppStore } from '../../stores/appStore';
 import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { ValidationMessage } from '../ui/ValidationMessage';
 import { clsx } from 'clsx';
 import type { MeshPeer, Peer } from '../../api/types';
+import { validatePeerAddress } from './validation';
 
 interface UnifiedIdentity {
   id: string;  // The public key
@@ -61,6 +63,7 @@ export function UnifiedPeersPanel() {
   const [newPeerAddress, setNewPeerAddress] = useState('');
   const [showAddPeer, setShowAddPeer] = useState(false);
   const { ignoredAuthors, ignoreAuthor, unignoreAuthor } = useAppStore();
+  const newPeerAddressError = validatePeerAddress(newPeerAddress);
 
   // Fetch all data
   const { data: status } = useQuery({
@@ -232,7 +235,7 @@ export function UnifiedPeersPanel() {
 
   function handleAddPeer(e: React.FormEvent) {
     e.preventDefault();
-    if (newPeerAddress.trim()) {
+    if (!newPeerAddressError && newPeerAddress.trim()) {
       addPeerMutation.mutate(newPeerAddress.trim());
     }
   }
@@ -282,9 +285,14 @@ export function UnifiedPeersPanel() {
               value={newPeerAddress}
               onChange={(e) => setNewPeerAddress(e.target.value)}
               className="flex-1"
+              error={Boolean(newPeerAddressError)}
+              aria-invalid={Boolean(newPeerAddressError)}
               autoFocus
             />
-            <Button type="submit" disabled={!newPeerAddress.trim() || addPeerMutation.isPending}>
+            <Button
+              type="submit"
+              disabled={!newPeerAddress.trim() || addPeerMutation.isPending || Boolean(newPeerAddressError)}
+            >
               {addPeerMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               <span className="ml-2">Add</span>
             </Button>
@@ -292,6 +300,7 @@ export function UnifiedPeersPanel() {
               <X className="w-4 h-4" />
             </Button>
           </form>
+          <ValidationMessage message={newPeerAddressError} />
           {addPeerMutation.isError && (
             <p className="mt-2 text-sm text-error">
               {addPeerMutation.error instanceof Error ? addPeerMutation.error.message : 'Failed to add peer'}
