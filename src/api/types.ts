@@ -84,6 +84,7 @@ export interface FeedQuery {
   content_type?: string;
   tag?: string;
   relates?: string;
+  trace_id?: string;
   after?: string;
   before?: string;
   include_self?: boolean;

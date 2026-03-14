@@ -12,6 +12,7 @@ export async function getFeed(query?: FeedQuery): Promise<Message[]> {
   if (query?.content_type) params.set('content_type', query.content_type);
   if (query?.tag) params.set('tag', query.tag);
   if (query?.relates) params.set('relates', query.relates);
+  if (query?.trace_id) params.set('trace_id', query.trace_id);
   if (query?.after) params.set('after', query.after);
   if (query?.before) params.set('before', query.before);
 

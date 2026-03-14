@@ -24,14 +24,18 @@ export function TaskPanel() {
 
   const pendingTasks = getPendingTasks(tasks);
   const activeTasks = getActiveTasks(tasks);
-  const selectedTask = pendingTasks.find((task) => task.taskId === selectedTaskId) ?? pendingTasks[0] ?? null;
+  const selectedTask =
+    tasks.find((task) => task.taskId === selectedTaskId) ??
+    pendingTasks[0] ??
+    activeTasks[0] ??
+    null;
 
   useEffect(() => {
-    if (selectedTask?.taskId && selectedTask.taskId !== selectedTaskId) {
+    if (!selectedTaskId && selectedTask?.taskId) {
       setSelectedTaskId(selectedTask.taskId);
     }
 
-    if (!selectedTask && selectedTaskId) {
+    if (selectedTaskId && !selectedTask) {
       setSelectedTaskId(null);
     }
   }, [selectedTask, selectedTaskId, setSelectedTaskId]);

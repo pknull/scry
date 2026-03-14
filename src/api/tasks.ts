@@ -24,6 +24,17 @@ type TaskLifecycleContent =
 
 type TaskEventMessage<T extends TaskLifecycleContent> = Message<T>;
 
+const TASK_MESSAGE_TYPES = [
+  'task',
+  'task_offer',
+  'task_offer_withdraw',
+  'task_assign',
+  'task_started',
+  'task_status',
+  'task_failed',
+  'task_result',
+] as const;
+
 interface TaskAccumulator {
   taskId: string;
   taskHash: string;
@@ -114,7 +125,16 @@ function getOrCreateTask(accumulators: Map<string, TaskAccumulator>, taskId: str
 }
 
 export async function getTaskRecords(limit = 500): Promise<TaskRecord[]> {
-  const messages = await getFeed({ include_self: true, limit });
+  const messageSets = await Promise.all(
+    TASK_MESSAGE_TYPES.map((contentType) =>
+      getFeed({ include_self: true, content_type: contentType, limit })
+    )
+  );
+
+  const messages = Array.from(
+    new Map(messageSets.flat().map((message) => [message.hash, message])).values()
+  );
+
   const taskMessages = messages
     .filter((message) => isObject(message.content))
     .sort((left, right) => new Date(left.timestamp).getTime() - new Date(right.timestamp).getTime());

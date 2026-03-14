@@ -18,7 +18,12 @@ interface TraceNode {
 }
 
 export async function getTraceSpans(traceId: string, limit = 500): Promise<Message<TraceSpanContent>[]> {
-  const messages = await getFeed({ include_self: true, content_type: 'trace_span', limit });
+  const messages = await getFeed({
+    include_self: true,
+    content_type: 'trace_span',
+    trace_id: traceId,
+    limit,
+  });
 
   return messages
     .filter((message): message is Message<TraceSpanContent> => {
