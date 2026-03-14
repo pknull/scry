@@ -9,6 +9,7 @@ import { RetentionPoliciesPanel } from './components/settings/RetentionPoliciesP
 import { TopicsPanel } from './components/settings/TopicsPanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { TaskPanel } from './components/tasks/TaskPanel';
+import { TracePanel } from './components/traces/TracePanel';
 import { useAppStore } from './stores/appStore';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <main className="flex-1 overflow-hidden">
             {currentView === 'feed' && <ChatFeed searchQuery={searchQuery} />}
             {currentView === 'tasks' && <div className="h-full overflow-auto p-4"><TaskPanel /></div>}
+            {currentView === 'traces' && <div className="h-full overflow-auto p-4"><TracePanel /></div>}
             {currentView === 'peers' && <div className="h-full overflow-auto p-4"><UnifiedPeersPanel /></div>}
             {currentView === 'schemas' && <div className="h-full overflow-auto p-4"><SchemaPanel /></div>}
             {currentView === 'groups' && <div className="h-full overflow-auto p-4"><ConsumerGroupsPanel /></div>}

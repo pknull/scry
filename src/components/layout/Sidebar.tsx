@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
-import { MessageSquare, Settings, Users, Radio, FileJson, UsersRound, Database, Tag, ClipboardList } from 'lucide-react';
+import { MessageSquare, Settings, Users, Radio, FileJson, UsersRound, Database, Tag, ClipboardList, Activity } from 'lucide-react';
 
-type View = 'feed' | 'tasks' | 'peers' | 'schemas' | 'groups' | 'retention' | 'topics' | 'settings';
+type View = 'feed' | 'tasks' | 'traces' | 'peers' | 'schemas' | 'groups' | 'retention' | 'topics' | 'settings';
 
 interface SidebarProps {
   currentView: View;
@@ -11,6 +11,7 @@ interface SidebarProps {
 const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
   { id: 'feed', label: 'Feed', icon: MessageSquare },
   { id: 'tasks', label: 'Tasks', icon: ClipboardList },
+  { id: 'traces', label: 'Traces', icon: Activity },
   { id: 'peers', label: 'Peers', icon: Users },
   { id: 'schemas', label: 'Schemas', icon: FileJson },
   { id: 'groups', label: 'Consumer Groups', icon: UsersRound },
