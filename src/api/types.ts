@@ -15,13 +15,19 @@ export interface Identity {
   x25519_public: string;
 }
 
-export interface Message {
+export interface Message<TContent extends MessageContent = MessageContent> {
   hash: string;
   author: string;
   sequence: number;
   timestamp: string;
   previous: string | null;
-  content: MessageContent;
+  content: TContent;
+  schema_id?: string | null;
+  relates?: string | null;
+  tags?: string[];
+  trace_id?: string | null;
+  span_id?: string | null;
+  expires_at?: string | null;
   signature: string;
   references?: string[];
 }
@@ -32,6 +38,7 @@ export interface MessageContent {
   topic?: string;
   title?: string;
   metadata?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface Peer {
@@ -75,8 +82,11 @@ export interface FeedQuery {
   author?: string;
   topic?: string;
   content_type?: string;
+  tag?: string;
+  relates?: string;
   after?: string;
   before?: string;
+  include_self?: boolean;
 }
 
 export interface SearchQuery {
@@ -186,4 +196,106 @@ export interface TopicInfo {
 export interface KnownTopicInfo {
   topic: string;
   subscribed: boolean;
+}
+
+export interface TaskContent extends MessageContent {
+  type: 'task';
+  id?: string;
+  hash: string;
+  task_type?: string;
+  request?: string;
+  requestor?: string;
+  prompt: string;
+  required_caps?: string[];
+  parent_id?: string;
+  context?: Record<string, unknown>;
+  priority?: number;
+  timeout_secs?: number;
+  author?: string;
+  keeper?: string;
+}
+
+export interface TaskOfferContent extends MessageContent {
+  type: 'task_offer';
+  task_id: string;
+  servitor: string;
+  capabilities: string[];
+  ttl_seconds: number;
+  timestamp: string;
+}
+
+export interface TaskAssignContent extends MessageContent {
+  type: 'task_assign';
+  task_id: string;
+  servitor: string;
+  assigner?: string;
+}
+
+export interface TaskStartedContent extends MessageContent {
+  type: 'task_started';
+  task_id: string;
+  servitor: string;
+  eta_seconds: number;
+  timestamp: string;
+}
+
+export interface TaskStatusContent extends MessageContent {
+  type: 'task_status';
+  task_id: string;
+  servitor: string;
+  progress_pct?: number;
+  revised_eta_seconds?: number;
+  message?: string;
+  timestamp: string;
+}
+
+export interface TaskFailedContent extends MessageContent {
+  type: 'task_failed';
+  task_id: string;
+  servitor: string;
+  reason: 'no_response' | 'execution_error' | 'timeout';
+  details?: string;
+  timestamp: string;
+}
+
+export interface TaskOfferWithdrawContent extends MessageContent {
+  type: 'task_offer_withdraw';
+  task_id: string;
+  servitor: string;
+  reason?: string;
+  timestamp: string;
+}
+
+export interface TaskResultContent extends MessageContent {
+  type: 'task_result';
+  task_id: string;
+  servitor: string;
+  correlation_id: string;
+  task_hash: string;
+  result_hash: string;
+  status: 'success' | 'error' | 'timeout';
+  result?: Record<string, unknown>;
+  error?: string;
+  duration_seconds?: number;
+  plan_hash?: string;
+  trace_id?: string;
+  attestation: {
+    servitor_id: string;
+    signature: string;
+    timestamp: string;
+  };
+}
+
+export interface TraceSpanContent extends MessageContent {
+  type: 'trace_span';
+  trace_id: string;
+  span_id: string;
+  parent_span_id?: string;
+  name: string;
+  service: string;
+  start_ts: string;
+  end_ts: string;
+  status?: 'ok' | 'error' | 'timeout';
+  attributes?: Record<string, unknown>;
+  error?: string;
 }

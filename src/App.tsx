@@ -8,6 +8,7 @@ import { ConsumerGroupsPanel } from './components/settings/ConsumerGroupsPanel';
 import { RetentionPoliciesPanel } from './components/settings/RetentionPoliciesPanel';
 import { TopicsPanel } from './components/settings/TopicsPanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
+import { TaskPanel } from './components/tasks/TaskPanel';
 import { useAppStore } from './stores/appStore';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
 
           <main className="flex-1 overflow-hidden">
             {currentView === 'feed' && <ChatFeed searchQuery={searchQuery} />}
+            {currentView === 'tasks' && <div className="h-full overflow-auto p-4"><TaskPanel /></div>}
             {currentView === 'peers' && <div className="h-full overflow-auto p-4"><UnifiedPeersPanel /></div>}
             {currentView === 'schemas' && <div className="h-full overflow-auto p-4"><SchemaPanel /></div>}
             {currentView === 'groups' && <div className="h-full overflow-auto p-4"><ConsumerGroupsPanel /></div>}

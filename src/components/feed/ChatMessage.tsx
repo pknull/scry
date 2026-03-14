@@ -59,12 +59,37 @@ function getDisplayText(content: Record<string, unknown>): string {
     case 'response':
       return (content.answer || content.text || content.body) as string || '';
     case 'task':
-      return content.prompt as string || '';
+      return (content.request as string || content.prompt as string || '') as string;
+    case 'task_offer': {
+      const servitor = content.servitor as string || '';
+      const caps = Array.isArray(content.capabilities) ? content.capabilities.join(', ') : '';
+      return `Offer from ${servitor.slice(1, 9)}...${caps ? ` for ${caps}` : ''}`;
+    }
+    case 'task_assign': {
+      const servitor = content.servitor as string || '';
+      return `Assigned to ${servitor.slice(1, 9)}...`;
+    }
+    case 'task_started': {
+      const eta = content.eta_seconds as number | undefined;
+      return eta ? `Execution started, ETA ${eta}s` : 'Execution started';
+    }
+    case 'task_status': {
+      const progress = content.progress_pct as number | undefined;
+      const message = content.message as string | undefined;
+      if (typeof progress === 'number' && message) return `${progress}% - ${message}`;
+      if (typeof progress === 'number') return `${progress}% complete`;
+      return message || 'Task status updated';
+    }
+    case 'task_failed':
+      return (content.details as string || content.reason as string || 'Task failed') as string;
     case 'task_result': {
       const result = content.result as Record<string, unknown> | undefined;
       const status = content.status as string || '';
       const resultText = result?.text as string || '';
-      return resultText ? `[${status}] ${resultText}` : `[${status}]`;
+      const error = content.error as string | undefined;
+      if (resultText) return `[${status}] ${resultText}`;
+      if (error) return `[${status}] ${error}`;
+      return `[${status}]`;
     }
     case 'task_claim': {
       const servitorId = content.servitor_id as string || '';
