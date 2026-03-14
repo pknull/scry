@@ -6,8 +6,10 @@ interface AppState {
   currentView: View;
   searchQuery: string;
   ignoredAuthors: string[];
+  selectedTaskId: string | null;
   setView: (view: View) => void;
   setSearchQuery: (query: string) => void;
+  setSelectedTaskId: (taskId: string | null) => void;
   ignoreAuthor: (author: string) => void;
   unignoreAuthor: (author: string) => void;
   isIgnored: (author: string) => boolean;
@@ -19,8 +21,10 @@ export const useAppStore = create<AppState>()(
       currentView: 'feed',
       searchQuery: '',
       ignoredAuthors: [],
+      selectedTaskId: null,
       setView: (view) => set({ currentView: view }),
       setSearchQuery: (query) => set({ searchQuery: query }),
+      setSelectedTaskId: (taskId) => set({ selectedTaskId: taskId }),
       ignoreAuthor: (author) =>
         set((state) => ({
           ignoredAuthors: state.ignoredAuthors.includes(author)
