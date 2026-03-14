@@ -3,7 +3,6 @@ import type { Hook } from './HooksEditor';
 const TOPIC_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
 const GROUP_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const CONTENT_TYPE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/;
-const MULTIADDR_PATTERN = /^\/(?:[^/\s]+\/)+tcp\/\d+$/;
 const BRACKETED_IPV6_PATTERN = /^\[([0-9A-Fa-f:.]+)\]:(\d{1,5})$/;
 const HOST_PORT_PATTERN = /^([^/\s:]+):(\d{1,5})$/;
 const AUTHOR_ID_PATTERN = /^@.+\.ed25519$/;
@@ -19,11 +18,6 @@ export function validatePeerAddress(value: string): string | null {
     return 'Peer address is required';
   }
 
-  if (MULTIADDR_PATTERN.test(trimmed)) {
-    const port = trimmed.slice(trimmed.lastIndexOf('/') + 1);
-    return isValidPort(port) ? null : 'Peer address must include a valid TCP port';
-  }
-
   const ipv6Match = BRACKETED_IPV6_PATTERN.exec(trimmed);
   if (ipv6Match) {
     return isValidPort(ipv6Match[2]) ? null : 'Peer address must include a valid TCP port';
@@ -31,7 +25,7 @@ export function validatePeerAddress(value: string): string | null {
 
   const hostPortMatch = HOST_PORT_PATTERN.exec(trimmed);
   if (!hostPortMatch) {
-    return 'Use host:port, [ipv6]:port, or /.../tcp/port';
+    return 'Use host:port or [ipv6]:port';
   }
 
   return isValidPort(hostPortMatch[2]) ? null : 'Peer address must include a valid TCP port';
@@ -133,23 +127,15 @@ export function validateSchemaDefinition(
     return result;
   }
 
-  const schema = result.parsed;
-  const properties = schema.properties;
-  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
-    return { error: 'Schema must define a properties object' };
-  }
-
-  const typeProperty = (properties as Record<string, unknown>).type;
-  if (!typeProperty || typeof typeProperty !== 'object' || Array.isArray(typeProperty)) {
-    return { error: 'Schema must define properties.type' };
-  }
-
-  const required = schema.required;
-  if (!Array.isArray(required) || !required.includes('type')) {
-    return { error: 'Schema required fields must include "type"' };
-  }
-
-  const constValue = (typeProperty as Record<string, unknown>).const;
+  const properties = result.parsed.properties;
+  const typeProperty =
+    properties && typeof properties === 'object' && !Array.isArray(properties)
+      ? (properties as Record<string, unknown>).type
+      : undefined;
+  const constValue =
+    typeProperty && typeof typeProperty === 'object' && !Array.isArray(typeProperty)
+      ? (typeProperty as Record<string, unknown>).const
+      : undefined;
   if (typeof constValue === 'string' && contentType.trim() && constValue !== contentType.trim()) {
     return { error: 'Schema properties.type.const must match the content type' };
   }
