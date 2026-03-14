@@ -8,10 +8,18 @@ import {
 import { getSchemas, getSchema, registerSchema, validateContent } from '../../api/schema';
 import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
 import { Toggle } from '../ui/Toggle';
+import { ValidationMessage } from '../ui/ValidationMessage';
 import { clsx } from 'clsx';
 import * as yaml from 'yaml';
 import type { SchemaInfo } from '../../api/types';
+import {
+  parseJsonObject,
+  validateContentType,
+  validatePositiveInteger,
+  validateSchemaDefinition,
+} from './validation';
 
 interface ConfigState {
   schema_strict: boolean;
@@ -26,6 +34,7 @@ export function SchemaPanel() {
   const [filterQuery, setFilterQuery] = useState('');
   const [configState, setConfigState] = useState<ConfigState>({ schema_strict: false, rawYaml: '' });
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   // Load config on mount
   useEffect(() => {
@@ -46,6 +55,7 @@ export function SchemaPanel() {
 
   async function toggleStrictMode(enabled: boolean) {
     setIsSavingConfig(true);
+    setConfigError(null);
     try {
       const parsed = yaml.parse(configState.rawYaml) || {};
       parsed.schema_strict = enabled;
@@ -53,7 +63,7 @@ export function SchemaPanel() {
       await invoke('write_config', { content: newYaml });
       setConfigState({ schema_strict: enabled, rawYaml: newYaml });
     } catch (err) {
-      console.error('Failed to save config:', err);
+      setConfigError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSavingConfig(false);
     }
@@ -136,6 +146,16 @@ export function SchemaPanel() {
             <div className="flex items-center gap-2 text-warning text-sm bg-warning/10 p-2 rounded">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               Messages without registered schemas will be rejected. Restart node to apply.
+            </div>
+          </div>
+        )}
+        {configError && (
+          <div className="px-4 pb-4">
+            <div className="rounded-md border border-error/30 bg-error/10 p-3">
+              <div className="flex items-center gap-2 text-sm text-error">
+                <AlertCircle className="h-4 w-4" />
+                {configError}
+              </div>
             </div>
           </div>
         )}
@@ -317,29 +337,31 @@ function RegisterSchemaForm({
   const [version, setVersion] = useState('1');
   const [description, setDescription] = useState('');
   const [jsonSchema, setJsonSchema] = useState('{\n  "type": "object",\n  "properties": {\n    "type": { "const": "" }\n  },\n  "required": ["type"]\n}');
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const contentTypeError = validateContentType(contentType);
+  const versionError = validatePositiveInteger(version, 'Version');
+  const schemaResult = validateSchemaDefinition(jsonSchema, contentType);
+  const schemaError = schemaResult.error;
+  const isInvalid = Boolean(contentTypeError || versionError || schemaError);
 
   const mutation = useMutation({
     mutationFn: registerSchema,
     onSuccess,
-    onError: (err) => setError(err instanceof Error ? err.message : 'Failed to register'),
+    onError: (err) => setApiError(err instanceof Error ? err.message : 'Failed to register'),
   });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-
-    try {
-      const parsed = JSON.parse(jsonSchema);
-      mutation.mutate({
-        content_type: contentType,
-        version: parseInt(version, 10),
-        json_schema: parsed,
-        description: description || undefined,
-      });
-    } catch {
-      setError('Invalid JSON schema');
+    if (isInvalid || !schemaResult.parsed) {
+      return;
     }
+    setApiError(null);
+    mutation.mutate({
+      content_type: contentType.trim(),
+      version: Number.parseInt(version, 10),
+      json_schema: schemaResult.parsed,
+      description: description.trim() || undefined,
+    });
   }
 
   return (
@@ -358,39 +380,49 @@ function RegisterSchemaForm({
             <label className="block text-sm font-medium text-text mb-1">
               Content Type
             </label>
-            <input
+            <Input
               type="text"
               value={contentType}
-              onChange={(e) => setContentType(e.target.value)}
+              onChange={(e) => {
+                setContentType(e.target.value);
+                setApiError(null);
+              }}
               placeholder="my_custom_type"
-              className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
-              required
+              error={Boolean(contentTypeError)}
+              aria-invalid={Boolean(contentTypeError)}
             />
+            <ValidationMessage message={contentTypeError} />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-1">
               Version
             </label>
-            <input
+            <Input
               type="number"
               value={version}
-              onChange={(e) => setVersion(e.target.value)}
+              onChange={(e) => {
+                setVersion(e.target.value);
+                setApiError(null);
+              }}
               min="1"
-              className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
-              required
+              error={Boolean(versionError)}
+              aria-invalid={Boolean(versionError)}
             />
+            <ValidationMessage message={versionError} />
           </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-text mb-1">
             Description
           </label>
-          <input
+          <Input
             type="text"
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setApiError(null);
+            }}
             placeholder="Optional description"
-            className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
         <div>
@@ -399,23 +431,32 @@ function RegisterSchemaForm({
           </label>
           <textarea
             value={jsonSchema}
-            onChange={(e) => setJsonSchema(e.target.value)}
+            onChange={(e) => {
+              setJsonSchema(e.target.value);
+              setApiError(null);
+            }}
             rows={10}
-            className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent font-mono text-sm"
-            required
+            className={clsx(
+              'w-full rounded-md bg-bg-tertiary px-3 py-2 font-mono text-sm text-text border focus:outline-none focus:ring-2 focus:ring-accent',
+              schemaError ? 'border-error' : 'border-border'
+            )}
+            aria-invalid={Boolean(schemaError)}
           />
+          <ValidationMessage message={schemaError} />
         </div>
-        {error && (
-          <div className="flex items-center gap-2 text-error text-sm">
-            <AlertCircle className="w-4 h-4" />
-            {error}
+        {apiError && (
+          <div className="rounded-md border border-error/30 bg-error/10 p-3">
+            <div className="flex items-center gap-2 text-error text-sm">
+              <AlertCircle className="w-4 h-4" />
+              {apiError}
+            </div>
           </div>
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || isInvalid}>
             {mutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin mr-1" />
             ) : (
@@ -433,7 +474,9 @@ function SchemaValidator({ onClose }: { onClose: () => void }) {
   const [content, setContent] = useState('{\n  "type": "insight",\n  "title": "Test",\n  "observation": "Test observation"\n}');
   const [schemaId, setSchemaId] = useState('');
   const [result, setResult] = useState<{ valid: boolean; error?: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const contentResult = parseJsonObject(content);
+  const contentError = contentResult.error;
 
   const { data: schemas } = useQuery({
     queryKey: ['schemas'],
@@ -444,27 +487,24 @@ function SchemaValidator({ onClose }: { onClose: () => void }) {
     mutationFn: validateContent,
     onSuccess: (data) => {
       setResult(data);
-      setError(null);
+      setApiError(null);
     },
     onError: (err) => {
-      setError(err instanceof Error ? err.message : 'Validation failed');
+      setApiError(err instanceof Error ? err.message : 'Validation failed');
       setResult(null);
     },
   });
 
   function handleValidate() {
-    setError(null);
-    setResult(null);
-
-    try {
-      const parsed = JSON.parse(content);
-      mutation.mutate({
-        content: parsed,
-        schema_id: schemaId || undefined,
-      });
-    } catch {
-      setError('Invalid JSON content');
+    if (contentError || !contentResult.parsed) {
+      return;
     }
+    setApiError(null);
+    setResult(null);
+    mutation.mutate({
+      content: contentResult.parsed,
+      schema_id: schemaId || undefined,
+    });
   }
 
   return (
@@ -501,10 +541,19 @@ function SchemaValidator({ onClose }: { onClose: () => void }) {
           </label>
           <textarea
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+              setApiError(null);
+              setResult(null);
+            }}
             rows={8}
-            className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent font-mono text-sm"
+            className={clsx(
+              'w-full rounded-md bg-bg-tertiary px-3 py-2 font-mono text-sm text-text border focus:outline-none focus:ring-2 focus:ring-accent',
+              contentError ? 'border-error' : 'border-border'
+            )}
+            aria-invalid={Boolean(contentError)}
           />
+          <ValidationMessage message={contentError} />
         </div>
 
         {result && (
@@ -526,15 +575,17 @@ function SchemaValidator({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {error && (
-          <div className="flex items-center gap-2 text-error text-sm">
-            <AlertCircle className="w-4 h-4" />
-            {error}
+        {apiError && (
+          <div className="rounded-md border border-error/30 bg-error/10 p-3">
+            <div className="flex items-center gap-2 text-error text-sm">
+              <AlertCircle className="w-4 h-4" />
+              {apiError}
+            </div>
           </div>
         )}
 
         <div className="flex justify-end">
-          <Button onClick={handleValidate} disabled={mutation.isPending}>
+          <Button onClick={handleValidate} disabled={mutation.isPending || Boolean(contentError)}>
             {mutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin mr-1" />
             ) : (

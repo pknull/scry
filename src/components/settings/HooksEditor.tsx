@@ -3,6 +3,8 @@ import { Plus, Trash2, Edit2, X, Check, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Toggle } from '../ui/Toggle';
+import { ValidationMessage } from '../ui/ValidationMessage';
+import { validateHook } from './validation';
 
 export interface Hook {
   name?: string;
@@ -27,23 +29,18 @@ interface HookFormProps {
 }
 
 function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
-  const [form, setForm] = useState<Hook>({ ...hook });
-  const [errors, setErrors] = useState<string[]>([]);
-
-  const validate = (): boolean => {
-    const errs: string[] = [];
-    if (!form.on_message && !form.webhook_url) {
-      errs.push('Must specify either a script path or webhook URL');
-    }
-    if (form.webhook_url && !form.webhook_url.startsWith('http://') && !form.webhook_url.startsWith('https://')) {
-      errs.push('Webhook URL must start with http:// or https://');
-    }
-    setErrors(errs);
-    return errs.length === 0;
-  };
+  const [form, setForm] = useState<Hook>({
+    ...hook,
+    timeout_secs: hook.timeout_secs ?? 30,
+    max_retries: hook.max_retries ?? 0,
+    retry_delay_secs: hook.retry_delay_secs ?? 5,
+    idempotent: hook.idempotent ?? false,
+  });
+  const errors = validateHook(form);
+  const hasErrors = Object.keys(errors).length > 0;
 
   const handleSave = () => {
-    if (validate()) {
+    if (!hasErrors) {
       onSave(form);
     }
   };
@@ -57,14 +54,12 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
         </button>
       </div>
 
-      {errors.length > 0 && (
+      {errors.transport && (
         <div className="p-3 rounded bg-error/10 border border-error/30">
-          {errors.map((err, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm text-error">
-              <AlertCircle className="w-4 h-4" />
-              {err}
-            </div>
-          ))}
+          <div className="flex items-center gap-2 text-sm text-error">
+            <AlertCircle className="w-4 h-4" />
+            {errors.transport}
+          </div>
         </div>
       )}
 
@@ -75,7 +70,10 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
             placeholder="my-hook (optional, for logging)"
             value={form.name ?? ''}
             onChange={(e) => setForm({ ...form, name: e.target.value || undefined })}
+            error={Boolean(errors.name)}
+            aria-invalid={Boolean(errors.name)}
           />
+          <ValidationMessage message={errors.name} />
           <p className="text-xs text-text-faint mt-1">A friendly name for this hook (shown in logs)</p>
         </div>
 
@@ -85,7 +83,10 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
             placeholder="/path/to/script.sh"
             value={form.on_message ?? ''}
             onChange={(e) => setForm({ ...form, on_message: e.target.value || undefined })}
+            error={Boolean(errors.on_message)}
+            aria-invalid={Boolean(errors.on_message)}
           />
+          <ValidationMessage message={errors.on_message} />
           <p className="text-xs text-text-faint mt-1">
             Executable to run when a message arrives. Message JSON is passed on stdin.
           </p>
@@ -97,7 +98,10 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
             placeholder="https://example.com/webhook"
             value={form.webhook_url ?? ''}
             onChange={(e) => setForm({ ...form, webhook_url: e.target.value || undefined })}
+            error={Boolean(errors.webhook_url)}
+            aria-invalid={Boolean(errors.webhook_url)}
           />
+          <ValidationMessage message={errors.webhook_url} />
           <p className="text-xs text-text-faint mt-1">
             HTTP endpoint to POST message JSON to. Can be used with or instead of script.
           </p>
@@ -110,11 +114,17 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
               <Input
                 type="number"
                 value={form.timeout_secs ?? 30}
-                onChange={(e) => setForm({ ...form, timeout_secs: parseInt(e.target.value) || 30 })}
+                onChange={(e) => setForm({
+                  ...form,
+                  timeout_secs: e.target.value === '' ? 0 : Number.parseInt(e.target.value, 10),
+                })}
                 className="w-20 text-center"
+                error={Boolean(errors.timeout_secs)}
+                aria-invalid={Boolean(errors.timeout_secs)}
               />
               <span className="text-sm text-text-muted">sec</span>
             </div>
+            <ValidationMessage message={errors.timeout_secs} />
           </div>
 
           <div>
@@ -122,9 +132,15 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
             <Input
               type="number"
               value={form.max_retries ?? 0}
-              onChange={(e) => setForm({ ...form, max_retries: parseInt(e.target.value) || 0 })}
+              onChange={(e) => setForm({
+                ...form,
+                max_retries: e.target.value === '' ? 0 : Number.parseInt(e.target.value, 10),
+              })}
               className="w-20 text-center"
+              error={Boolean(errors.max_retries)}
+              aria-invalid={Boolean(errors.max_retries)}
             />
+            <ValidationMessage message={errors.max_retries} />
           </div>
 
           <div>
@@ -133,11 +149,17 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
               <Input
                 type="number"
                 value={form.retry_delay_secs ?? 5}
-                onChange={(e) => setForm({ ...form, retry_delay_secs: parseInt(e.target.value) || 5 })}
+                onChange={(e) => setForm({
+                  ...form,
+                  retry_delay_secs: e.target.value === '' ? 0 : Number.parseInt(e.target.value, 10),
+                })}
                 className="w-20 text-center"
+                error={Boolean(errors.retry_delay_secs)}
+                aria-invalid={Boolean(errors.retry_delay_secs)}
               />
               <span className="text-sm text-text-muted">sec</span>
             </div>
+            <ValidationMessage message={errors.retry_delay_secs} />
           </div>
         </div>
 
@@ -157,7 +179,7 @@ function HookForm({ hook, onSave, onCancel, isNew }: HookFormProps) {
         <Button variant="secondary" size="sm" onClick={onCancel}>
           Cancel
         </Button>
-        <Button size="sm" onClick={handleSave}>
+        <Button size="sm" onClick={handleSave} disabled={hasErrors}>
           <Check className="w-4 h-4 mr-1" />
           {isNew ? 'Add Hook' : 'Save'}
         </Button>
