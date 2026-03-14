@@ -10,7 +10,10 @@ import {
 } from '../../api/groups';
 import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { ValidationMessage } from '../ui/ValidationMessage';
 import type { ConsumerGroup, GroupMember, GroupOffset } from '../../api/types';
+import { validateGroupId } from './validation';
 
 export function ConsumerGroupsPanel() {
   const queryClient = useQueryClient();
@@ -70,6 +73,7 @@ export function ConsumerGroupsPanel() {
       {/* Create form */}
       {showCreate && (
         <CreateGroupForm
+          existingGroupIds={groups?.map((group) => group.group_id) ?? []}
           onClose={() => setShowCreate(false)}
           onSuccess={() => {
             setShowCreate(false);
@@ -251,25 +255,31 @@ function OffsetRow({ offset }: { offset: GroupOffset }) {
 }
 
 function CreateGroupForm({
+  existingGroupIds,
   onClose,
   onSuccess,
 }: {
+  existingGroupIds: string[];
   onClose: () => void;
   onSuccess: () => void;
 }) {
   const [groupId, setGroupId] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const groupIdError = validateGroupId(groupId, existingGroupIds);
 
   const mutation = useMutation({
     mutationFn: createGroup,
     onSuccess,
-    onError: (err) => setError(err instanceof Error ? err.message : 'Failed to create'),
+    onError: (err) => setApiError(err instanceof Error ? err.message : 'Failed to create'),
   });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    mutation.mutate(groupId);
+    if (groupIdError) {
+      return;
+    }
+    setApiError(null);
+    mutation.mutate(groupId.trim());
   }
 
   return (
@@ -287,31 +297,37 @@ function CreateGroupForm({
           <label className="block text-sm font-medium text-text mb-1">
             Group ID
           </label>
-          <input
+          <Input
             type="text"
             value={groupId}
-            onChange={(e) => setGroupId(e.target.value)}
+            onChange={(e) => {
+              setGroupId(e.target.value);
+              setApiError(null);
+            }}
             placeholder="my-consumer-group"
-            pattern="[a-zA-Z0-9_-]+"
             maxLength={64}
-            className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent font-mono"
-            required
+            className="font-mono"
+            error={Boolean(groupIdError)}
+            aria-invalid={Boolean(groupIdError)}
           />
+          <ValidationMessage message={groupIdError} />
           <p className="text-xs text-text-muted mt-1">
             Alphanumeric, hyphens, underscores. Max 64 characters.
           </p>
         </div>
-        {error && (
-          <div className="flex items-center gap-2 text-error text-sm">
-            <AlertCircle className="w-4 h-4" />
-            {error}
+        {apiError && (
+          <div className="rounded-md border border-error/30 bg-error/10 p-3">
+            <div className="flex items-center gap-2 text-error text-sm">
+              <AlertCircle className="w-4 h-4" />
+              {apiError}
+            </div>
           </div>
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || Boolean(groupIdError)}>
             {mutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin mr-1" />
             ) : (

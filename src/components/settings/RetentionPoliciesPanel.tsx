@@ -10,8 +10,16 @@ import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
 import { Input } from '../ui/Input';
+import { ValidationMessage } from '../ui/ValidationMessage';
 import * as yaml from 'yaml';
 import type { RetentionPolicy, CreateRetentionPolicyRequest } from '../../api/types';
+import {
+  validateAuthorId,
+  validateContentType,
+  validateOptionalPositiveInteger,
+  validatePositiveInteger,
+  validateTopicName,
+} from './validation';
 
 interface RetentionConfig {
   retention_enabled: boolean;
@@ -29,7 +37,10 @@ export function RetentionPoliciesPanel() {
     tombstone_max_age_secs: 604800,
     rawYaml: '',
   });
+  const [retentionIntervalMinutes, setRetentionIntervalMinutes] = useState('60');
+  const [tombstoneAgeDays, setTombstoneAgeDays] = useState('7');
   const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   // Load config on mount
   useEffect(() => {
@@ -43,6 +54,12 @@ export function RetentionPoliciesPanel() {
           tombstone_max_age_secs: parsed.tombstone_max_age_secs ?? 604800,
           rawYaml: content,
         });
+        setRetentionIntervalMinutes(
+          String(Math.max(1, Math.floor((parsed.retention_interval_secs ?? 3600) / 60)))
+        );
+        setTombstoneAgeDays(
+          String(Math.max(1, Math.floor((parsed.tombstone_max_age_secs ?? 604800) / 86400)))
+        );
       } catch (err) {
         console.error('Failed to load config:', err);
       }
@@ -53,6 +70,7 @@ export function RetentionPoliciesPanel() {
   async function updateConfig<K extends keyof RetentionConfig>(key: K, value: RetentionConfig[K]) {
     if (key === 'rawYaml') return;
     setIsSavingConfig(true);
+    setConfigError(null);
     try {
       const parsed = yaml.parse(config.rawYaml) || {};
       parsed[key] = value;
@@ -60,7 +78,42 @@ export function RetentionPoliciesPanel() {
       await invoke('write_config', { content: newYaml });
       setConfig(prev => ({ ...prev, [key]: value, rawYaml: newYaml }));
     } catch (err) {
-      console.error('Failed to save config:', err);
+      setConfigError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setIsSavingConfig(false);
+    }
+  }
+
+  const cleanupIntervalError = validatePositiveInteger(retentionIntervalMinutes, 'Cleanup interval');
+  const tombstoneAgeError = validatePositiveInteger(tombstoneAgeDays, 'Tombstone max age');
+  const nextRetentionIntervalSecs = Number.parseInt(retentionIntervalMinutes || '0', 10) * 60;
+  const nextTombstoneAgeSecs = Number.parseInt(tombstoneAgeDays || '0', 10) * 86400;
+  const hasTimingChanges =
+    nextRetentionIntervalSecs !== config.retention_interval_secs ||
+    nextTombstoneAgeSecs !== config.tombstone_max_age_secs;
+
+  async function handleTimingSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (cleanupIntervalError || tombstoneAgeError) {
+      return;
+    }
+
+    setIsSavingConfig(true);
+    setConfigError(null);
+    try {
+      const parsed = yaml.parse(config.rawYaml) || {};
+      parsed.retention_interval_secs = nextRetentionIntervalSecs;
+      parsed.tombstone_max_age_secs = nextTombstoneAgeSecs;
+      const newYaml = yaml.stringify(parsed);
+      await invoke('write_config', { content: newYaml });
+      setConfig((prev) => ({
+        ...prev,
+        retention_interval_secs: nextRetentionIntervalSecs,
+        tombstone_max_age_secs: nextTombstoneAgeSecs,
+        rawYaml: newYaml,
+      }));
+    } catch (err) {
+      setConfigError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsSavingConfig(false);
     }
@@ -135,48 +188,92 @@ export function RetentionPoliciesPanel() {
 
           {config.retention_enabled && (
             <>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-text">Cleanup Interval</div>
-                  <div className="text-sm text-text-muted">
-                    How often to run retention cleanup
+              <form className="space-y-4" onSubmit={handleTimingSubmit}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-medium text-text">Cleanup Interval</div>
+                    <div className="text-sm text-text-muted">
+                      How often to run retention cleanup
+                    </div>
+                  </div>
+                  <div className="w-40">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={retentionIntervalMinutes}
+                        onChange={(e) => {
+                          setRetentionIntervalMinutes(e.target.value);
+                          setConfigError(null);
+                        }}
+                        className="w-20 text-center"
+                        min={1}
+                        error={Boolean(cleanupIntervalError)}
+                        aria-invalid={Boolean(cleanupIntervalError)}
+                      />
+                      <span className="text-sm text-text-muted">min</span>
+                    </div>
+                    <ValidationMessage message={cleanupIntervalError} />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={Math.floor(config.retention_interval_secs / 60)}
-                    onChange={(e) => updateConfig('retention_interval_secs', parseInt(e.target.value) * 60)}
-                    className="w-20 text-center"
-                    min={1}
-                  />
-                  <span className="text-sm text-text-muted">min</span>
-                </div>
-              </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium text-text">Tombstone Max Age</div>
-                  <div className="text-sm text-text-muted">
-                    How long to keep deletion markers
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-medium text-text">Tombstone Max Age</div>
+                    <div className="text-sm text-text-muted">
+                      How long to keep deletion markers
+                    </div>
+                  </div>
+                  <div className="w-40">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={tombstoneAgeDays}
+                        onChange={(e) => {
+                          setTombstoneAgeDays(e.target.value);
+                          setConfigError(null);
+                        }}
+                        className="w-20 text-center"
+                        min={1}
+                        error={Boolean(tombstoneAgeError)}
+                        aria-invalid={Boolean(tombstoneAgeError)}
+                      />
+                      <span className="text-sm text-text-muted">days</span>
+                    </div>
+                    <ValidationMessage message={tombstoneAgeError} />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    value={Math.floor(config.tombstone_max_age_secs / 86400)}
-                    onChange={(e) => updateConfig('tombstone_max_age_secs', parseInt(e.target.value) * 86400)}
-                    className="w-20 text-center"
-                    min={1}
-                  />
-                  <span className="text-sm text-text-muted">days</span>
+
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={
+                      isSavingConfig ||
+                      Boolean(cleanupIntervalError) ||
+                      Boolean(tombstoneAgeError) ||
+                      !hasTimingChanges
+                    }
+                  >
+                    {isSavingConfig ? (
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    ) : null}
+                    Apply timing
+                  </Button>
                 </div>
-              </div>
+              </form>
 
               <div className="text-xs text-text-muted bg-bg-tertiary p-2 rounded">
                 Restart node to apply changes.
               </div>
             </>
+          )}
+          {configError && (
+            <div className="rounded-md border border-error/30 bg-error/10 p-3">
+              <div className="flex items-center gap-2 text-sm text-error">
+                <AlertCircle className="h-4 w-4" />
+                {configError}
+              </div>
+            </div>
           )}
         </div>
       </Card>
@@ -317,42 +414,50 @@ function CreatePolicyForm({
   const [maxCount, setMaxCount] = useState('');
   const [maxBytesMB, setMaxBytesMB] = useState('');
   const [compactKey, setCompactKey] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const scopeValueError = (() => {
+    if (scopeType === 'global') return null;
+    if (scopeType === 'topic') return validateTopicName(scopeValue);
+    if (scopeType === 'author') return validateAuthorId(scopeValue);
+    return validateContentType(scopeValue);
+  })();
+  const maxAgeError = validateOptionalPositiveInteger(maxAgeDays, 'Max age');
+  const maxCountError = validateOptionalPositiveInteger(maxCount, 'Max count');
+  const maxBytesError = validateOptionalPositiveInteger(maxBytesMB, 'Max size');
+  const criteriaError =
+    !maxAgeDays.trim() && !maxCount.trim() && !maxBytesMB.trim() && !compactKey.trim()
+      ? 'At least one retention criterion is required'
+      : null;
+  const isInvalid = Boolean(scopeValueError || maxAgeError || maxCountError || maxBytesError || criteriaError);
 
   const mutation = useMutation({
     mutationFn: createRetentionPolicy,
     onSuccess,
-    onError: (err) => setError(err instanceof Error ? err.message : 'Failed to create'),
+    onError: (err) => setApiError(err instanceof Error ? err.message : 'Failed to create'),
   });
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    if (isInvalid) {
+      return;
+    }
+    setApiError(null);
 
     // Build scope
     let scope: CreateRetentionPolicyRequest['scope'];
     if (scopeType === 'global') {
       scope = 'global';
     } else {
-      if (!scopeValue.trim()) {
-        setError(`${scopeType} value is required`);
-        return;
-      }
       scope = { [scopeType]: scopeValue.trim() };
     }
 
     // Build request
     const request: CreateRetentionPolicyRequest = { scope };
-    if (maxAgeDays) request.max_age_secs = parseInt(maxAgeDays) * 86400;
-    if (maxCount) request.max_count = parseInt(maxCount);
-    if (maxBytesMB) request.max_bytes = parseInt(maxBytesMB) * 1048576;
+    if (maxAgeDays) request.max_age_secs = Number.parseInt(maxAgeDays, 10) * 86400;
+    if (maxCount) request.max_count = Number.parseInt(maxCount, 10);
+    if (maxBytesMB) request.max_bytes = Number.parseInt(maxBytesMB, 10) * 1048576;
     if (compactKey.trim()) request.compact_key = compactKey.trim();
-
-    // Require at least one criterion
-    if (!request.max_age_secs && !request.max_count && !request.max_bytes && !request.compact_key) {
-      setError('At least one retention criterion is required');
-      return;
-    }
 
     mutation.mutate(request);
   }
@@ -374,7 +479,10 @@ function CreatePolicyForm({
           <div className="flex gap-2">
             <select
               value={scopeType}
-              onChange={(e) => setScopeType(e.target.value as typeof scopeType)}
+              onChange={(e) => {
+                setScopeType(e.target.value as typeof scopeType);
+                setApiError(null);
+              }}
               className="px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
             >
               <option value="global">Global</option>
@@ -383,15 +491,21 @@ function CreatePolicyForm({
               <option value="content_type">Content Type</option>
             </select>
             {scopeType !== 'global' && (
-              <input
+              <Input
                 type="text"
                 value={scopeValue}
-                onChange={(e) => setScopeValue(e.target.value)}
+                onChange={(e) => {
+                  setScopeValue(e.target.value);
+                  setApiError(null);
+                }}
                 placeholder={scopeType === 'author' ? '@xxx.ed25519' : scopeType}
-                className="flex-1 px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent font-mono"
+                className="flex-1 font-mono"
+                error={Boolean(scopeValueError)}
+                aria-invalid={Boolean(scopeValueError)}
               />
             )}
           </div>
+          <ValidationMessage message={scopeValueError} />
         </div>
 
         {/* Criteria */}
@@ -400,51 +514,69 @@ function CreatePolicyForm({
             <label className="block text-sm font-medium text-text mb-1">
               Max Age (days)
             </label>
-            <input
+            <Input
               type="number"
               value={maxAgeDays}
-              onChange={(e) => setMaxAgeDays(e.target.value)}
+              onChange={(e) => {
+                setMaxAgeDays(e.target.value);
+                setApiError(null);
+              }}
               min="1"
               placeholder="e.g., 30"
-              className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
+              error={Boolean(maxAgeError)}
+              aria-invalid={Boolean(maxAgeError)}
             />
+            <ValidationMessage message={maxAgeError} />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-1">
               Max Count
             </label>
-            <input
+            <Input
               type="number"
               value={maxCount}
-              onChange={(e) => setMaxCount(e.target.value)}
+              onChange={(e) => {
+                setMaxCount(e.target.value);
+                setApiError(null);
+              }}
               min="1"
               placeholder="e.g., 1000"
-              className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
+              error={Boolean(maxCountError)}
+              aria-invalid={Boolean(maxCountError)}
             />
+            <ValidationMessage message={maxCountError} />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-1">
               Max Size (MB)
             </label>
-            <input
+            <Input
               type="number"
               value={maxBytesMB}
-              onChange={(e) => setMaxBytesMB(e.target.value)}
+              onChange={(e) => {
+                setMaxBytesMB(e.target.value);
+                setApiError(null);
+              }}
               min="1"
               placeholder="e.g., 100"
-              className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent"
+              error={Boolean(maxBytesError)}
+              aria-invalid={Boolean(maxBytesError)}
             />
+            <ValidationMessage message={maxBytesError} />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-1">
               Compact Key (JSON path)
             </label>
-            <input
+            <Input
               type="text"
               value={compactKey}
-              onChange={(e) => setCompactKey(e.target.value)}
+              onChange={(e) => {
+                setCompactKey(e.target.value);
+                setApiError(null);
+              }}
               placeholder="e.g., $.profile.id"
-              className="w-full px-3 py-2 rounded-md bg-bg-tertiary text-text border border-border focus:outline-none focus:ring-2 focus:ring-accent font-mono"
+              className="font-mono"
             />
           </div>
         </div>
@@ -453,11 +585,14 @@ function CreatePolicyForm({
           At least one criterion required. Messages matching the scope will be deleted when
           any criterion is exceeded.
         </p>
+        <ValidationMessage message={criteriaError} />
 
-        {error && (
-          <div className="flex items-center gap-2 text-error text-sm">
-            <AlertCircle className="w-4 h-4" />
-            {error}
+        {apiError && (
+          <div className="rounded-md border border-error/30 bg-error/10 p-3">
+            <div className="flex items-center gap-2 text-error text-sm">
+              <AlertCircle className="w-4 h-4" />
+              {apiError}
+            </div>
           </div>
         )}
 
@@ -465,7 +600,7 @@ function CreatePolicyForm({
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || isInvalid}>
             {mutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin mr-1" />
             ) : (
