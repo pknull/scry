@@ -1,3 +1,34 @@
+// Phase 2 Wave 5 Step 26 — mirrors TransportHealth in
+// `egregore/src/transport/health.rs` (serde JSON layout). Absent on
+// pre-Phase-2 daemons: the field is omitted from /v1/status response
+// entirely, so keep it optional on the TypeScript side.
+export interface TransportHealth {
+  connected: boolean;
+  backend: string;
+  last_successful_publish?: string;
+  last_peer_contact?: string;
+  unreplicated_count: number;
+  inflight_publishes: number;
+  last_error?: string;
+  children?: TransportHealth[];
+  bridge_queues?: BridgeQueuesHealth;
+}
+
+// Mirror of BridgeQueuesHealth (RFC 0002 §8.4).
+export interface BridgeQueuesHealth {
+  destination: string;
+  depth_total: number;
+  authors_backpressured: number;
+  authors_active: number;
+  backpressure_events_total: number;
+  self_echo_total: number;
+  oldest_queued_age_secs?: number;
+  publish_in_flight_age_secs?: number;
+  ack_on_error_total: number;
+  nats_redelivery_total: number;
+  last_error?: string;
+}
+
 export interface Status {
   version: string;
   identity: string;
@@ -8,6 +39,38 @@ export interface Status {
   feed_count: number;
   follow_count: number;
   uptime_secs: number;
+  /// Phase 2 Wave 5 Step 24 — present when the daemon has at least one
+  /// attached transport. Omitted on test harnesses and pre-Phase-2 nodes.
+  transport?: TransportHealth;
+}
+
+// /v1/transport/pending response (amendment §C.14).
+export interface PendingRowDto {
+  message_hash: string;
+  author: string;
+  sequence: number;
+  enqueued_at: string;
+  last_attempt_at?: string;
+  attempt_count: number;
+  last_error?: string;
+}
+
+export interface PendingSummary {
+  transport_id: string;
+  count: number;
+  rows: PendingRowDto[];
+}
+
+// /v1/transport/bus/authors response (amendment §C.14).
+export interface BusAuthorRowDto {
+  author: string;
+  last_indexed_at: string;
+  author_seq: number;
+  stream_seq: number;
+}
+
+export interface BusAuthorsSummary {
+  rows: BusAuthorRowDto[];
 }
 
 export interface Identity {
@@ -240,6 +303,51 @@ export interface TaskStartedContent extends MessageContent {
   timestamp: string;
 }
 
+export interface ServitorProfileContent extends MessageContent {
+  type: 'servitor_profile';
+  servitor_id: string;
+  capabilities?: string[];
+  tools?: string[];
+  roles?: string[];
+  labels?: Record<string, string>;
+  manifest_ref?: string | null;
+  target_summary?: {
+    count: number;
+    kinds: string[];
+  };
+}
+
+export interface ServitorManifestContent extends MessageContent {
+  type: 'servitor_manifest';
+  servitor_id: string;
+  manifest_id: string;
+  roles?: string[];
+  labels?: Record<string, string>;
+  capabilities?: string[];
+  deployment_targets?: Array<{
+    target_id: string;
+    kind: string;
+    summary?: string | null;
+    roles?: string[];
+    snapshot_ref?: string | null;
+  }>;
+  updated_at: string;
+}
+
+export interface EnvironmentSnapshotContent extends MessageContent {
+  type: 'environment_snapshot';
+  snapshot_id: string;
+  servitor_id: string;
+  target_id: string;
+  manifest_ref: string;
+  kind: string;
+  summary: Record<string, unknown>;
+  state: Record<string, unknown>;
+  observed_at: string;
+  ttl_secs: number;
+  sensitivity: 'public_summary' | 'restricted';
+}
+
 export interface TaskStatusContent extends MessageContent {
   type: 'task_status';
   task_id: string;
@@ -278,7 +386,6 @@ export interface TaskResultContent extends MessageContent {
   result?: Record<string, unknown>;
   error?: string;
   duration_seconds?: number;
-  plan_hash?: string;
   trace_id?: string;
   attestation: {
     servitor_id: string;

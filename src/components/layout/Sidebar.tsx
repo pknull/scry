@@ -1,7 +1,29 @@
 import { clsx } from 'clsx';
-import { MessageSquare, Settings, Users, Radio, FileJson, UsersRound, Database, Tag, ClipboardList, Activity } from 'lucide-react';
+import {
+  MessageSquare,
+  Settings,
+  Users,
+  Radio,
+  FileJson,
+  UsersRound,
+  Database,
+  Tag,
+  ClipboardList,
+  Activity,
+  Network,
+} from 'lucide-react';
 
-type View = 'feed' | 'tasks' | 'traces' | 'peers' | 'schemas' | 'groups' | 'retention' | 'topics' | 'settings';
+type View =
+  | 'feed'
+  | 'tasks'
+  | 'traces'
+  | 'peers'
+  | 'schemas'
+  | 'groups'
+  | 'retention'
+  | 'topics'
+  | 'bridge'
+  | 'settings';
 
 interface SidebarProps {
   currentView: View;
@@ -17,6 +39,7 @@ const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
   { id: 'groups', label: 'Consumer Groups', icon: UsersRound },
   { id: 'retention', label: 'Retention', icon: Database },
   { id: 'topics', label: 'Topics', icon: Tag },
+  { id: 'bridge', label: 'Bridge', icon: Network },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

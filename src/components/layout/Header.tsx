@@ -17,6 +17,7 @@ const viewTitles: Record<View, string> = {
   groups: 'Consumer Groups',
   retention: 'Retention Policies',
   topics: 'Topic Subscriptions',
+  bridge: 'Bridge Transport',
   settings: 'Settings',
 };
 

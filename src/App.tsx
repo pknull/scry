@@ -7,6 +7,7 @@ import { SchemaPanel } from './components/settings/SchemaPanel';
 import { ConsumerGroupsPanel } from './components/settings/ConsumerGroupsPanel';
 import { RetentionPoliciesPanel } from './components/settings/RetentionPoliciesPanel';
 import { TopicsPanel } from './components/settings/TopicsPanel';
+import { BridgePanel } from './components/settings/BridgePanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { TaskPanel } from './components/tasks/TaskPanel';
 import { TracePanel } from './components/traces/TracePanel';
@@ -36,6 +37,7 @@ function App() {
             {currentView === 'groups' && <div className="h-full overflow-auto p-4"><ConsumerGroupsPanel /></div>}
             {currentView === 'retention' && <div className="h-full overflow-auto p-4"><RetentionPoliciesPanel /></div>}
             {currentView === 'topics' && <div className="h-full overflow-auto p-4"><TopicsPanel /></div>}
+            {currentView === 'bridge' && <div className="h-full overflow-auto p-4"><BridgePanel /></div>}
             {currentView === 'settings' && <div className="h-full overflow-auto p-4"><SettingsPanel /></div>}
           </main>
         </div>
