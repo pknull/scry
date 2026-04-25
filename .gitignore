@@ -14,6 +14,10 @@ dist-ssr
 src-tauri/target
 CLAUDE.md
 
+# Assistant tooling state — managed at Thallus umbrella, never per-subproject.
+.claude/
+Memory/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
