@@ -5,7 +5,6 @@ import { TaskOffers } from './TaskOffers';
 
 interface TaskDetailProps {
   task: TaskRecord | null;
-  assigner?: string;
 }
 
 function shortId(value?: string | null): string {
@@ -13,13 +12,13 @@ function shortId(value?: string | null): string {
   return value.slice(0, 16);
 }
 
-export function TaskDetail({ task, assigner }: TaskDetailProps) {
+export function TaskDetail({ task }: TaskDetailProps) {
   if (!task) {
     return (
       <Card className="min-h-72" padding="lg">
         <div className="flex h-full min-h-56 flex-col items-center justify-center gap-3 text-center text-sm text-text-muted">
           <ClipboardList className="h-8 w-8 text-accent/70" />
-          <div>Select a pending task to inspect its offers and assign a servitor.</div>
+          <div>Select a task to inspect its lifecycle and observed offers.</div>
         </div>
       </Card>
     );
@@ -76,7 +75,7 @@ export function TaskDetail({ task, assigner }: TaskDetailProps) {
 
       <div className="space-y-3">
         <div className="text-xs uppercase tracking-wide text-text-muted">Offers</div>
-        <TaskOffers task={task} assigner={assigner} />
+        <TaskOffers task={task} />
       </div>
     </Card>
   );

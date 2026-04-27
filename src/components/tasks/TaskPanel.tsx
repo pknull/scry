@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { getActiveTasks, getPendingTasks, getTaskRecords } from '../../api/tasks';
-import { getStatus } from '../../api/status';
 import { useAppStore } from '../../stores/appStore';
 import { ActiveTasks } from './ActiveTasks';
 import { TaskDetail } from './TaskDetail';
@@ -15,11 +14,6 @@ export function TaskPanel() {
     queryKey: ['tasks'],
     queryFn: () => getTaskRecords(500),
     refetchInterval: 5000,
-  });
-
-  const { data: status } = useQuery({
-    queryKey: ['status'],
-    queryFn: getStatus,
   });
 
   const pendingTasks = getPendingTasks(tasks);
@@ -67,7 +61,7 @@ export function TaskPanel() {
       </div>
 
       <div className="grid min-h-0 grid-cols-1 gap-4">
-        <TaskDetail task={selectedTask} assigner={status?.identity} />
+        <TaskDetail task={selectedTask} />
         <ActiveTasks tasks={activeTasks} />
       </div>
     </div>

@@ -1,17 +1,15 @@
 import { Cpu, ShieldCheck } from 'lucide-react';
 import type { TaskRecord } from '../../api/tasks';
-import { AssignButton } from './AssignButton';
 
 interface TaskOffersProps {
   task: TaskRecord;
-  assigner?: string;
 }
 
 function shortId(value: string): string {
   return value.slice(0, 18);
 }
 
-export function TaskOffers({ task, assigner }: TaskOffersProps) {
+export function TaskOffers({ task }: TaskOffersProps) {
   if (task.offers.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-4 text-sm text-text-muted">
@@ -49,12 +47,6 @@ export function TaskOffers({ task, assigner }: TaskOffersProps) {
               Offer TTL: {offer.content.ttl_seconds}s
             </div>
           </div>
-
-          <AssignButton
-            taskId={task.taskId}
-            servitor={offer.content.servitor}
-            assigner={assigner}
-          />
         </div>
       ))}
     </div>

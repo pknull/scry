@@ -51,7 +51,7 @@ egregore-web/
 │   │   ├── traces.ts       # Trace operations
 │   │   └── types.ts        # Shared TypeScript types
 │   ├── components/
-│   │   ├── feed/           # ChatFeed, MessageCard, MessageComposer
+│   │   ├── feed/           # ChatFeed, MessageCard
 │   │   ├── layout/         # Sidebar, Header
 │   │   ├── settings/       # UnifiedPeersPanel, SchemaPanel, etc.
 │   │   ├── tasks/          # Task view components
@@ -112,8 +112,8 @@ egregore-web/
 
 | View | Features |
 |------|----------|
-| **Feed** | Threaded messages, full-text search, publish (form/JSON), reply |
-| **Tasks** | Task list, detail view, status tracking |
+| **Feed** | Feed browsing, full-text search, trace pivots |
+| **Tasks** | Task list, detail view, status tracking, offer observation |
 | **Traces** | Trace list, detail view, execution history |
 | **Peers** | Add/remove peers, mesh health, direct/transitive/replicated classification |
 | **Schemas** | List/register schemas, validate messages, toggle strict mode |
@@ -136,7 +136,7 @@ All API calls route through Tauri commands.
 
 - `src/App.tsx` — View router, layout
 - `src/components/feed/ChatFeed.tsx` — Main feed with threading
-- `src/components/feed/MessageComposer.tsx` — Publish form/JSON
+- `src/components/tasks/TaskPanel.tsx` — Task activity observer
 - `src/components/settings/UnifiedPeersPanel.tsx` — Merged peer view
 - `src-tauri/src/commands.rs` — All Tauri commands
 - `tauri.conf.json` — Window config, CSP, build settings

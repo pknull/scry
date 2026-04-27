@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './client';
+import { apiGet } from './client';
 import type { Message, FeedQuery, SearchQuery } from './types';
 
 export async function getFeed(query?: FeedQuery): Promise<Message[]> {
@@ -52,37 +52,4 @@ export async function getAuthors(): Promise<string[]> {
   const messages = await getFeed({ limit: 500 });
   const authors = new Set(messages.map((m) => m.author));
   return Array.from(authors).sort();
-}
-
-export async function publishMessage(params: {
-  content: {
-    type: string;
-    text?: string;
-    title?: string;
-    [key: string]: unknown;
-  };
-  topic?: string;
-  references?: string[];
-  relates?: string;
-  tags?: string[];
-  trace_id?: string;
-  span_id?: string;
-}): Promise<Message> {
-  // topic and references are top-level, content is the validated payload
-  const body: Record<string, unknown> = { content: params.content };
-  if (params.topic) body.topic = params.topic;
-  if (params.references?.length) body.references = params.references;
-  if (params.relates) body.relates = params.relates;
-  if (params.tags?.length) body.tags = params.tags;
-  if (params.trace_id) body.trace_id = params.trace_id;
-  if (params.span_id) body.span_id = params.span_id;
-
-  const response = await apiPost<Message>('/v1/publish', body);
-  if (!response.success && response.error) {
-    throw new Error(`${response.error.code}: ${response.error.message}`);
-  }
-  if (!response.data) {
-    throw new Error('Failed to publish message - no data returned');
-  }
-  return response.data;
 }

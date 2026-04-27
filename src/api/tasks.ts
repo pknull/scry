@@ -1,4 +1,4 @@
-import { getFeed, publishMessage } from './feed';
+import { getFeed } from './feed';
 import type {
   Message,
   MessageContent,
@@ -231,15 +231,4 @@ export function getTaskProgress(task: TaskRecord): number | null {
 
 export function getTaskStatusMessage(task: TaskRecord): string | null {
   return task.latestStatus?.content.message ?? null;
-}
-
-export async function publishTaskAssign(taskId: string, servitor: string, assigner?: string) {
-  return publishMessage({
-    content: {
-      type: 'task_assign',
-      task_id: taskId,
-      servitor,
-      ...(assigner ? { assigner } : {}),
-    },
-  });
 }

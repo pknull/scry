@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, RefreshCw, AlertCircle, Plus } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 import { getFeed, searchInsights } from '../../api/feed';
 import { MessageCard } from './MessageCard';
-import { MessageComposer } from './MessageComposer';
 import { Button } from '../ui/Button';
 import type { Message } from '../../api/types';
 
@@ -44,7 +43,6 @@ function buildThreads(messages: Message[]): ThreadedMessage[] {
 
 export function FeedViewer({ searchQuery }: FeedViewerProps) {
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
-  const [showComposer, setShowComposer] = useState(false);
 
   const isSearching = searchQuery.trim().length > 0;
 
@@ -129,20 +127,12 @@ export function FeedViewer({ searchQuery }: FeedViewerProps) {
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto">
-      {/* New message button / composer */}
-      {showComposer ? (
-        <MessageComposer onClose={() => setShowComposer(false)} />
-      ) : (
-        <div className="flex gap-2">
-          <Button onClick={() => setShowComposer(true)} className="flex-1">
-            <Plus className="w-4 h-4 mr-2" />
-            New Message
-          </Button>
-          <Button variant="secondary" onClick={() => refetchFeed()}>
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <Button variant="secondary" onClick={() => refetchFeed()}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
 
       {isSearching && (
         <p className="text-sm text-text-muted">
