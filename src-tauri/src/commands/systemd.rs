@@ -1,142 +1,13 @@
+//! Systemd user-service management commands for the egregore daemon.
+//!
+//! Wraps `systemctl --user` invocations and the unit-file install/uninstall
+//! cycle. The frontend uses these to start/stop/install the egregore service
+//! from the Settings panel.
+
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-fn get_config_path() -> PathBuf {
-    // Check common locations for egregore config
-    let paths = [
-        // Custom data directory (most common)
-        dirs::home_dir().map(|h| h.join("egregore-data").join("config.yaml")),
-        // XDG config
-        dirs::config_dir().map(|c| c.join("egregore").join("config.yaml")),
-        // Home directory
-        dirs::home_dir().map(|h| h.join(".egregore").join("config.yaml")),
-    ];
-
-    for path in paths.into_iter().flatten() {
-        if path.exists() {
-            return path;
-        }
-    }
-
-    // Default to the most likely location
-    dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("egregore-data")
-        .join("config.yaml")
-}
-
-#[tauri::command]
-pub fn read_config() -> Result<String, String> {
-    let path = get_config_path();
-    fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read config at {:?}: {}", path, e))
-}
-
-#[tauri::command]
-pub fn write_config(content: String) -> Result<(), String> {
-    let path = get_config_path();
-
-    // Create backup before writing
-    if path.exists() {
-        let backup_path = path.with_extension("yaml.bak");
-        fs::copy(&path, &backup_path)
-            .map_err(|e| format!("Failed to create backup: {}", e))?;
-    }
-
-    // Ensure parent directory exists
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create config directory: {}", e))?;
-    }
-
-    fs::write(&path, content)
-        .map_err(|e| format!("Failed to write config: {}", e))
-}
-
-#[tauri::command]
-pub fn get_config_path_str() -> String {
-    get_config_path().to_string_lossy().to_string()
-}
-
-// HTTP proxy commands to bypass CORS
-const BASE_URL: &str = "http://127.0.0.1:7654";
-
-#[tauri::command]
-pub async fn api_get(endpoint: String) -> Result<String, String> {
-    let url = format!("{}{}", BASE_URL, endpoint);
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format!("Request failed: {}", e))?;
-
-    let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
-
-    if !status.is_success() {
-        return Err(format!("HTTP {}: {}", status.as_u16(), body));
-    }
-
-    Ok(body)
-}
-
-#[tauri::command]
-pub async fn api_post(endpoint: String, body: String) -> Result<String, String> {
-    let url = format!("{}{}", BASE_URL, endpoint);
-    let client = reqwest::Client::new();
-
-    let response = client
-        .post(&url)
-        .header("Content-Type", "application/json")
-        .body(body)
-        .send()
-        .await
-        .map_err(|e| format!("Request failed: {}", e))?;
-
-    let status = response.status();
-    let response_body = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
-
-    if !status.is_success() {
-        return Err(format!("HTTP {}: {}", status.as_u16(), response_body));
-    }
-
-    Ok(response_body)
-}
-
-#[tauri::command]
-pub async fn api_delete(endpoint: String) -> Result<String, String> {
-    let url = format!("{}{}", BASE_URL, endpoint);
-    let client = reqwest::Client::new();
-
-    let response = client
-        .delete(&url)
-        .send()
-        .await
-        .map_err(|e| format!("Request failed: {}", e))?;
-
-    let status = response.status();
-    let body = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
-
-    if !status.is_success() {
-        return Err(format!("HTTP {}: {}", status.as_u16(), body));
-    }
-
-    Ok(body)
-}
-
-// Systemd management commands
 const SERVICE_NAME: &str = "egregore";
 
 fn get_systemd_user_dir() -> PathBuf {
@@ -325,33 +196,4 @@ pub fn systemd_uninstall() -> Result<String, String> {
         .output();
 
     Ok("Service uninstalled".to_string())
-}
-
-#[tauri::command]
-pub fn find_egregore_binary() -> Option<String> {
-    // Check common locations
-    let paths = [
-        dirs::home_dir().map(|h| h.join("bin").join("egregore")),
-        dirs::home_dir().map(|h| h.join(".local").join("bin").join("egregore")),
-        Some(PathBuf::from("/usr/local/bin/egregore")),
-        Some(PathBuf::from("/usr/bin/egregore")),
-    ];
-
-    for path in paths.into_iter().flatten() {
-        if path.exists() {
-            return Some(path.to_string_lossy().to_string());
-        }
-    }
-
-    // Try which command
-    if let Ok(output) = Command::new("which").arg("egregore").output() {
-        if output.status.success() {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if !path.is_empty() {
-                return Some(path);
-            }
-        }
-    }
-
-    None
 }
