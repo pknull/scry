@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from './client';
+import { apiGet, apiPostOrThrow, apiDelete } from './client';
 import type { RetentionPolicy, CreateRetentionPolicyRequest } from './types';
 
 export async function getRetentionPolicies(): Promise<RetentionPolicy[]> {
@@ -9,14 +9,11 @@ export async function getRetentionPolicies(): Promise<RetentionPolicy[]> {
 export async function createRetentionPolicy(
   request: CreateRetentionPolicyRequest
 ): Promise<RetentionPolicy> {
-  const response = await apiPost<RetentionPolicy>('/v1/retention/policies', request);
-  if (!response.success && response.error) {
-    throw new Error(`${response.error.code}: ${response.error.message}`);
-  }
-  if (!response.data) {
-    throw new Error('Failed to create retention policy');
-  }
-  return response.data;
+  return apiPostOrThrow<RetentionPolicy>(
+    '/v1/retention/policies',
+    request,
+    'Failed to create retention policy',
+  );
 }
 
 export async function deleteRetentionPolicy(id: number): Promise<void> {

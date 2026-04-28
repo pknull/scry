@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from './client';
+import { apiGet, apiPostOrThrow } from './client';
 import type {
   SchemaInfo,
   SchemaDefinition,
@@ -19,20 +19,17 @@ export async function getSchema(schemaId: string): Promise<SchemaDefinition | nu
 }
 
 export async function registerSchema(request: RegisterSchemaRequest): Promise<SchemaInfo> {
-  const response = await apiPost<SchemaInfo>('/v1/schemas', request);
-  if (!response.success && response.error) {
-    throw new Error(`${response.error.code}: ${response.error.message}`);
-  }
-  if (!response.data) {
-    throw new Error('Failed to register schema');
-  }
-  return response.data;
+  return apiPostOrThrow<SchemaInfo>('/v1/schemas', request, 'Failed to register schema');
 }
 
 export async function validateContent(request: ValidateRequest): Promise<ValidateResponse> {
-  const response = await apiPost<ValidateResponse>('/v1/schemas/validate', request);
-  if (!response.data) {
-    throw new Error('Failed to validate content');
-  }
-  return response.data;
+  // Note: previously ignored envelope-level success/error and only checked
+  // for missing data. Now propagates envelope errors via apiPostOrThrow,
+  // which is a behavior improvement — surface the real failure to callers
+  // instead of conflating a daemon-side validation refusal with "no data".
+  return apiPostOrThrow<ValidateResponse>(
+    '/v1/schemas/validate',
+    request,
+    'Failed to validate content',
+  );
 }

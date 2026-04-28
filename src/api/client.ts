@@ -53,3 +53,41 @@ export async function apiDelete(endpoint: string): Promise<void> {
     throw new ApiError(0, String(e));
   }
 }
+
+/**
+ * Strict variants that throw on either:
+ * - envelope-level failure (`success: false` with an `error` body) — propagated
+ *   verbatim as `<code>: <message>`,
+ * - missing `data` — propagated with the caller-supplied `errMsg`.
+ *
+ * Use when the callsite *requires* a value; modules that prefer to coerce a
+ * missing payload to a default (`?? []`, `?? null`) should keep using the
+ * lower-level `apiGet` / `apiPost` and inspect the envelope themselves.
+ *
+ * Presence is checked as `data == null`, NOT truthiness, so valid falsy
+ * payloads like `false`, `0`, or `""` are returned to the caller as-is.
+ */
+function unwrap<T>(response: ApiResponse<T>, errMsg: string): T {
+  if (!response.success) {
+    if (response.error) {
+      throw new Error(`${response.error.code}: ${response.error.message}`);
+    }
+    throw new Error(errMsg);
+  }
+  if (response.data == null) {
+    throw new Error(errMsg);
+  }
+  return response.data;
+}
+
+export async function apiGetOrThrow<T>(endpoint: string, errMsg: string): Promise<T> {
+  return unwrap(await apiGet<T>(endpoint), errMsg);
+}
+
+export async function apiPostOrThrow<T>(
+  endpoint: string,
+  data: unknown,
+  errMsg: string,
+): Promise<T> {
+  return unwrap(await apiPost<T>(endpoint, data), errMsg);
+}

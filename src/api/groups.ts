@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from './client';
+import { apiGet, apiPost, apiPostOrThrow, apiDelete } from './client';
 import type {
   ConsumerGroup,
   GroupMember,
@@ -18,14 +18,11 @@ export async function getGroup(groupId: string): Promise<ConsumerGroup | null> {
 }
 
 export async function createGroup(groupId: string): Promise<ConsumerGroup> {
-  const response = await apiPost<ConsumerGroup>('/v1/groups', { group_id: groupId });
-  if (!response.success && response.error) {
-    throw new Error(`${response.error.code}: ${response.error.message}`);
-  }
-  if (!response.data) {
-    throw new Error('Failed to create group');
-  }
-  return response.data;
+  return apiPostOrThrow<ConsumerGroup>(
+    '/v1/groups',
+    { group_id: groupId },
+    'Failed to create group',
+  );
 }
 
 export async function deleteGroup(groupId: string): Promise<void> {
@@ -41,16 +38,11 @@ export async function getGroupMembers(groupId: string): Promise<GroupMember[]> {
 
 export async function joinGroup(groupId: string, memberId: string): Promise<JoinGroupResponse> {
   const encoded = encodeURIComponent(groupId);
-  const response = await apiPost<JoinGroupResponse>(`/v1/groups/${encoded}/join`, {
-    member_id: memberId,
-  });
-  if (!response.success && response.error) {
-    throw new Error(`${response.error.code}: ${response.error.message}`);
-  }
-  if (!response.data) {
-    throw new Error('Failed to join group');
-  }
-  return response.data;
+  return apiPostOrThrow<JoinGroupResponse>(
+    `/v1/groups/${encoded}/join`,
+    { member_id: memberId },
+    'Failed to join group',
+  );
 }
 
 export async function leaveGroup(groupId: string, memberId: string): Promise<void> {
@@ -71,16 +63,9 @@ export async function commitOffset(
   committedBy: string
 ): Promise<GroupOffset> {
   const encoded = encodeURIComponent(groupId);
-  const response = await apiPost<GroupOffset>(`/v1/groups/${encoded}/offsets`, {
-    author,
-    sequence,
-    committed_by: committedBy,
-  });
-  if (!response.success && response.error) {
-    throw new Error(`${response.error.code}: ${response.error.message}`);
-  }
-  if (!response.data) {
-    throw new Error('Failed to commit offset');
-  }
-  return response.data;
+  return apiPostOrThrow<GroupOffset>(
+    `/v1/groups/${encoded}/offsets`,
+    { author, sequence, committed_by: committedBy },
+    'Failed to commit offset',
+  );
 }

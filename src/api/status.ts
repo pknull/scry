@@ -1,4 +1,4 @@
-import { apiGet } from './client';
+import { apiGetOrThrow } from './client';
 import type {
   Status,
   Identity,
@@ -7,19 +7,11 @@ import type {
 } from './types';
 
 export async function getStatus(): Promise<Status> {
-  const response = await apiGet<Status>('/v1/status');
-  if (!response.data) {
-    throw new Error('Failed to get status');
-  }
-  return response.data;
+  return apiGetOrThrow<Status>('/v1/status', 'Failed to get status');
 }
 
 export async function getIdentity(): Promise<Identity> {
-  const response = await apiGet<Identity>('/v1/identity');
-  if (!response.data) {
-    throw new Error('Failed to get identity');
-  }
-  return response.data;
+  return apiGetOrThrow<Identity>('/v1/identity', 'Failed to get identity');
 }
 
 // Phase 2 Wave 5 Step 26 — bridge panel data feeds (amendment §C.14).
@@ -27,19 +19,15 @@ export async function getIdentity(): Promise<Identity> {
 export async function getTransportPending(
   transportId: string,
 ): Promise<PendingSummary> {
-  const response = await apiGet<PendingSummary>(
+  return apiGetOrThrow<PendingSummary>(
     `/v1/transport/pending?transport_id=${encodeURIComponent(transportId)}`,
+    'Failed to get transport pending summary',
   );
-  if (!response.data) {
-    throw new Error('Failed to get transport pending summary');
-  }
-  return response.data;
 }
 
 export async function getBusAuthors(): Promise<BusAuthorsSummary> {
-  const response = await apiGet<BusAuthorsSummary>('/v1/transport/bus/authors');
-  if (!response.data) {
-    throw new Error('Failed to get bus authors summary');
-  }
-  return response.data;
+  return apiGetOrThrow<BusAuthorsSummary>(
+    '/v1/transport/bus/authors',
+    'Failed to get bus authors summary',
+  );
 }
