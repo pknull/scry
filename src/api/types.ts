@@ -292,7 +292,6 @@ export interface TaskAssignContent extends MessageContent {
   type: 'task_assign';
   task_id: string;
   servitor: string;
-  assigner?: string;
 }
 
 export interface TaskStartedContent extends MessageContent {
