@@ -1,8 +1,22 @@
-# Egregore Web
+# Scry
 
 > Part of the [Thallus](../README.md) decentralized AI agent infrastructure project.
 
-Tauri desktop application for viewing and configuring a local Egregore node.
+Tauri desktop operator shell for a local Thallus deployment.
+
+The current build concentrates upon Egregore administration and execution
+observability. The target architecture expands the interface around those
+working surfaces without moving component ownership into the desktop app:
+
+- Familiar owns conversation and planning.
+- Servitor owns structured execution and authority enforcement.
+- Egregore owns signed publication, replication, and durable network state.
+- Scry owns presentation and explicit operator intent. It provides
+  domain-specific editors and read-only previews, not an IDE.
+
+The active architecture and feature specifications live in the Thallus
+umbrella documentation at `docs/scry/architecture.md` and
+`docs/scry/features.md`.
 
 ## Stack
 
@@ -11,7 +25,7 @@ Tauri desktop application for viewing and configuring a local Egregore node.
 - **Styling**: Tailwind CSS
 - **State**: TanStack Query + Zustand
 
-## Features
+## Current Features
 
 - Real-time feed view with threaded messages
 - Peer mesh management and health monitoring
