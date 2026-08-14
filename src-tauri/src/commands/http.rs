@@ -5,9 +5,38 @@
 
 const BASE_URL: &str = "http://127.0.0.1:7654";
 
+fn validate_endpoint(endpoint: &str) -> Result<(), String> {
+    if endpoint.starts_with("//") {
+        return Err("API endpoint must not start with //".to_string());
+    }
+
+    if !(endpoint.starts_with("/v1/") || endpoint.starts_with("/metrics")) {
+        return Err("API endpoint must start with /v1/ or /metrics".to_string());
+    }
+
+    if endpoint.contains("://") {
+        return Err("API endpoint must not contain a URL scheme".to_string());
+    }
+
+    if endpoint.contains("..") {
+        return Err("API endpoint must not contain path traversal".to_string());
+    }
+
+    if endpoint.chars().any(char::is_whitespace) {
+        return Err("API endpoint must not contain whitespace".to_string());
+    }
+
+    Ok(())
+}
+
+fn build_url(endpoint: &str) -> Result<String, String> {
+    validate_endpoint(endpoint)?;
+    Ok(format!("{}{}", BASE_URL, endpoint))
+}
+
 #[tauri::command]
 pub async fn api_get(endpoint: String) -> Result<String, String> {
-    let url = format!("{}{}", BASE_URL, endpoint);
+    let url = build_url(&endpoint)?;
     let client = reqwest::Client::new();
 
     let response = client
@@ -31,7 +60,7 @@ pub async fn api_get(endpoint: String) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn api_post(endpoint: String, body: String) -> Result<String, String> {
-    let url = format!("{}{}", BASE_URL, endpoint);
+    let url = build_url(&endpoint)?;
     let client = reqwest::Client::new();
 
     let response = client
@@ -57,7 +86,7 @@ pub async fn api_post(endpoint: String, body: String) -> Result<String, String> 
 
 #[tauri::command]
 pub async fn api_delete(endpoint: String) -> Result<String, String> {
-    let url = format!("{}{}", BASE_URL, endpoint);
+    let url = build_url(&endpoint)?;
     let client = reqwest::Client::new();
 
     let response = client
@@ -77,4 +106,37 @@ pub async fn api_delete(endpoint: String) -> Result<String, String> {
     }
 
     Ok(body)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::validate_endpoint;
+
+    #[test]
+    fn accepts_supported_endpoint_prefixes() {
+        for endpoint in ["/v1/status", "/metrics"] {
+            assert!(
+                validate_endpoint(endpoint).is_ok(),
+                "expected {endpoint:?} to be accepted"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_unsafe_or_unsupported_endpoints() {
+        for endpoint in [
+            "http://evil",
+            "//host/path",
+            "/v1/../admin",
+            "/v1/feed?next=http://evil",
+            "/v1/status bad",
+            "foo",
+            "",
+        ] {
+            assert!(
+                validate_endpoint(endpoint).is_err(),
+                "expected {endpoint:?} to be rejected"
+            );
+        }
+    }
 }
