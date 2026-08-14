@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  egregore_web_lib::run();
+    egregore_web_lib::run();
 }

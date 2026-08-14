@@ -1,10 +1,10 @@
 mod commands;
 
 use commands::{
-    api_delete, api_get, api_post, get_config_path_str, read_config, write_config,
-    systemd_status, systemd_is_active, systemd_is_enabled, systemd_is_installed,
-    systemd_start, systemd_stop, systemd_restart, systemd_enable, systemd_disable,
-    systemd_install, systemd_uninstall, find_egregore_binary,
+    api_delete, api_get, api_post, find_egregore_binary, get_config_path_str, read_config,
+    systemd_disable, systemd_enable, systemd_install, systemd_is_active, systemd_is_enabled,
+    systemd_is_installed, systemd_restart, systemd_start, systemd_status, systemd_stop,
+    systemd_uninstall, write_config,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

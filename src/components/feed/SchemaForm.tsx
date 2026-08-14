@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Hash, ChevronDown, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ParsedSchema, SchemaField } from '../../hooks/useSchemas';
@@ -163,22 +163,25 @@ export function SchemaForm({
   disabled,
   onSubmit,
 }: SchemaFormProps) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
   // Split fields into primary and optional
   const primaryField = schema.fields.find((f) => f.isPrimary);
   const requiredFields = schema.fields.filter((f) => f.required && !f.isPrimary);
   const optionalFields = schema.fields.filter((f) => !f.required && !f.isPrimary);
 
-  // Auto-show advanced if any required non-primary fields need values
-  useEffect(() => {
-    const hasUnfilledRequired = requiredFields.some(
-      (f) => values[f.name] === undefined || values[f.name] === ''
-    );
-    if (hasUnfilledRequired && !showAdvanced) {
-      setShowAdvanced(true);
-    }
-  }, [schema.contentType]); // Only on type change
+  const hasUnfilledRequired = requiredFields.some(
+    (f) => values[f.name] === undefined || values[f.name] === ''
+  );
+  const [advancedState, setAdvancedState] = useState(() => ({
+    contentType: schema.contentType,
+    visible: hasUnfilledRequired,
+  }));
+  const showAdvanced =
+    advancedState.contentType === schema.contentType
+      ? advancedState.visible
+      : hasUnfilledRequired;
+  const setShowAdvanced = (visible: boolean) => {
+    setAdvancedState({ contentType: schema.contentType, visible });
+  };
 
   const updateField = (name: string, value: unknown) => {
     const newValues = { ...values };

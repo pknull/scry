@@ -49,10 +49,11 @@ function getDisplayText(content: Record<string, unknown>): string {
   const type = content.type as string;
 
   switch (type) {
-    case 'profile':
+    case 'profile': {
       const name = content.name as string;
       const desc = content.description as string;
       return name ? `${name}${desc ? ` - ${desc}` : ''}` : desc || '';
+    }
     case 'query':
       return content.question as string || '';
     case 'insight':
