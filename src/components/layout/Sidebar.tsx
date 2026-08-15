@@ -9,6 +9,7 @@ import {
   Database,
   Tag,
   ClipboardList,
+  UserCheck,
   Activity,
   Network,
 } from 'lucide-react';
@@ -16,6 +17,7 @@ import {
 type View =
   | 'feed'
   | 'tasks'
+  | 'assignments'
   | 'traces'
   | 'peers'
   | 'schemas'
@@ -33,6 +35,7 @@ interface SidebarProps {
 const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
   { id: 'feed', label: 'Feed', icon: MessageSquare },
   { id: 'tasks', label: 'Tasks', icon: ClipboardList },
+  { id: 'assignments', label: 'Assignments', icon: UserCheck },
   { id: 'traces', label: 'Traces', icon: Activity },
   { id: 'peers', label: 'Peers', icon: Users },
   { id: 'schemas', label: 'Schemas', icon: FileJson },

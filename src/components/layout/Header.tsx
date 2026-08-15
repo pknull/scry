@@ -11,6 +11,7 @@ interface HeaderProps {
 const viewTitles: Record<View, string> = {
   feed: 'Feed',
   tasks: 'Task Activity',
+  assignments: 'Assignments',
   traces: 'Trace Waterfall',
   peers: 'Peers & Network',
   schemas: 'Schema Registry',

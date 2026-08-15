@@ -10,6 +10,7 @@ import { TopicsPanel } from './components/settings/TopicsPanel';
 import { BridgePanel } from './components/settings/BridgePanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { TaskPanel } from './components/tasks/TaskPanel';
+import { AssignmentsPanel } from './components/assignments/AssignmentsPanel';
 import { TracePanel } from './components/traces/TracePanel';
 import { useAppStore } from './stores/appStore';
 
@@ -31,6 +32,7 @@ function App() {
           <main className="flex-1 overflow-hidden">
             {currentView === 'feed' && <ChatFeed searchQuery={searchQuery} />}
             {currentView === 'tasks' && <div className="h-full overflow-auto p-4"><TaskPanel /></div>}
+            {currentView === 'assignments' && <div className="h-full overflow-auto p-4"><AssignmentsPanel /></div>}
             {currentView === 'traces' && <div className="h-full overflow-auto p-4"><TracePanel /></div>}
             {currentView === 'peers' && <div className="h-full overflow-auto p-4"><UnifiedPeersPanel /></div>}
             {currentView === 'schemas' && <div className="h-full overflow-auto p-4"><SchemaPanel /></div>}
