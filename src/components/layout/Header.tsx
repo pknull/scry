@@ -15,7 +15,6 @@ const viewTitles: Record<View, string> = {
   traces: 'Trace Waterfall',
   peers: 'Peers & Network',
   schemas: 'Schema Registry',
-  groups: 'Consumer Groups',
   retention: 'Retention Policies',
   topics: 'Topic Subscriptions',
   bridge: 'Bridge Transport',

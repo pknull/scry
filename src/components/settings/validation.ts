@@ -1,7 +1,6 @@
 import type { Hook } from './HooksEditor';
 
 const TOPIC_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
-const GROUP_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const CONTENT_TYPE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/;
 const BRACKETED_IPV6_PATTERN = /^\[([0-9A-Fa-f:.]+)\]:(\d{1,5})$/;
 const HOST_PORT_PATTERN = /^([^/\s:]+):(\d{1,5})$/;
@@ -41,21 +40,6 @@ export function validateTopicName(value: string): string | null {
   }
   if (!TOPIC_PATTERN.test(trimmed)) {
     return 'Use letters, numbers, dots, slashes, colons, underscores, or hyphens';
-  }
-  return null;
-}
-
-export function validateGroupId(value: string, existingGroupIds: Iterable<string> = []): string | null {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return 'Group ID is required';
-  }
-  if (!GROUP_ID_PATTERN.test(trimmed)) {
-    return 'Use only letters, numbers, hyphens, and underscores';
-  }
-  const existing = new Set(Array.from(existingGroupIds, (groupId) => groupId.toLowerCase()));
-  if (existing.has(trimmed.toLowerCase())) {
-    return 'A consumer group with this ID already exists';
   }
   return null;
 }

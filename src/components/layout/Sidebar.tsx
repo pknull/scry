@@ -5,7 +5,6 @@ import {
   Users,
   Radio,
   FileJson,
-  UsersRound,
   Database,
   Tag,
   ClipboardList,
@@ -21,7 +20,6 @@ type View =
   | 'traces'
   | 'peers'
   | 'schemas'
-  | 'groups'
   | 'retention'
   | 'topics'
   | 'bridge'
@@ -39,7 +37,6 @@ const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
   { id: 'traces', label: 'Traces', icon: Activity },
   { id: 'peers', label: 'Peers', icon: Users },
   { id: 'schemas', label: 'Schemas', icon: FileJson },
-  { id: 'groups', label: 'Consumer Groups', icon: UsersRound },
   { id: 'retention', label: 'Retention', icon: Database },
   { id: 'topics', label: 'Topics', icon: Tag },
   { id: 'bridge', label: 'Bridge', icon: Network },

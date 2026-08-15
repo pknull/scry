@@ -4,7 +4,6 @@ import { StatusBar } from './components/layout/StatusBar';
 import { ChatFeed } from './components/feed/ChatFeed';
 import { UnifiedPeersPanel } from './components/settings/UnifiedPeersPanel';
 import { SchemaPanel } from './components/settings/SchemaPanel';
-import { ConsumerGroupsPanel } from './components/settings/ConsumerGroupsPanel';
 import { RetentionPoliciesPanel } from './components/settings/RetentionPoliciesPanel';
 import { TopicsPanel } from './components/settings/TopicsPanel';
 import { BridgePanel } from './components/settings/BridgePanel';
@@ -36,7 +35,6 @@ function App() {
             {currentView === 'traces' && <div className="h-full overflow-auto p-4"><TracePanel /></div>}
             {currentView === 'peers' && <div className="h-full overflow-auto p-4"><UnifiedPeersPanel /></div>}
             {currentView === 'schemas' && <div className="h-full overflow-auto p-4"><SchemaPanel /></div>}
-            {currentView === 'groups' && <div className="h-full overflow-auto p-4"><ConsumerGroupsPanel /></div>}
             {currentView === 'retention' && <div className="h-full overflow-auto p-4"><RetentionPoliciesPanel /></div>}
             {currentView === 'topics' && <div className="h-full overflow-auto p-4"><TopicsPanel /></div>}
             {currentView === 'bridge' && <div className="h-full overflow-auto p-4"><BridgePanel /></div>}

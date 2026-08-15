@@ -196,37 +196,6 @@ export interface ValidateResponse {
   error?: string;
 }
 
-// Consumer Group types
-export interface ConsumerGroup {
-  group_id: string;
-  generation: number;
-  member_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface GroupMember {
-  member_id: string;
-  joined_at: string;
-  assigned_feeds: string[];
-  assignment_generation: number;
-}
-
-export interface GroupOffset {
-  author: string;
-  committed_sequence: number;
-  committed_at: string;
-  committed_by: string;
-}
-
-export interface JoinGroupResponse {
-  group_id: string;
-  member_id: string;
-  generation: number;
-  assigned_feeds: string[];
-  is_leader: boolean;
-}
-
 // Retention Policy types
 export type RetentionScopeType = 'global' | 'topic' | 'author' | 'content_type';
 

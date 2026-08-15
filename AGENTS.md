@@ -28,45 +28,54 @@ Tauri desktop admin dashboard for the Egregore network. (Renamed from egregore-w
 ## Build & Run
 
 ```bash
-npm install          # Install dependencies
-npm run tauri dev    # Development (hot reload)
-npm run tauri build  # Production build
+pnpm install       # Install dependencies
+pnpm tauri dev     # Development (hot reload)
+pnpm tauri build   # Production build
 ```
 
 ## Project Structure
 
 ```
-egregore-web/
+scry/
 ├── src/                    # React frontend
 │   ├── api/                # API client modules
-│   │   ├── client.ts       # HTTP wrapper (invokes Tauri)
+│   │   ├── client.ts       # Typed response envelope/error layer over Tauri IPC
+│   │   ├── assignments.ts  # Assignment projection, commands, reconciliation
 │   │   ├── feed.ts         # Feed/message operations
 │   │   ├── peers.ts        # Peer management
 │   │   ├── status.ts       # Node status/identity
 │   │   ├── schema.ts       # Schema registry
-│   │   ├── groups.ts       # Consumer groups
 │   │   ├── retention.ts    # Retention policies
 │   │   ├── topics.ts       # Topic subscriptions
 │   │   ├── tasks.ts        # Task management
 │   │   ├── traces.ts       # Trace operations
 │   │   └── types.ts        # Shared TypeScript types
 │   ├── components/
-│   │   ├── feed/           # ChatFeed, MessageCard
+│   │   ├── assignments/    # Operator assignment workflow
+│   │   ├── feed/           # ChatFeed, ChatMessage
 │   │   ├── layout/         # Sidebar, Header
-│   │   ├── settings/       # UnifiedPeersPanel, SchemaPanel, etc.
+│   │   ├── settings/       # Peers, schemas, retention, topics, bridge, config
+│   │   │   ├── BridgePanel.tsx
+│   │   │   └── BridgeQueueRow.tsx
 │   │   ├── tasks/          # Task view components
 │   │   ├── traces/         # Trace view components
 │   │   └── ui/             # Button, Card, Input, Toggle
 │   ├── hooks/              # React Query hooks
 │   ├── stores/             # Zustand stores
-│   │   └── appStore.ts     # View state, ignored authors
+│   │   ├── appStore.ts     # View state, ignored authors
+│   │   └── assignmentStore.ts # Session assignment state
 │   ├── App.tsx             # Main app with router
 │   └── main.tsx            # Entry point
 ├── src-tauri/              # Rust backend
-│   └── src/
-│       ├── lib.rs          # Tauri command registration
-│       └── commands.rs     # HTTP proxy, config, systemd
-└── tauri.conf.json         # Tauri configuration
+│   ├── src/
+│   │   ├── lib.rs          # Tauri command registration
+│   │   └── commands/
+│   │       ├── binary.rs   # Egregore binary discovery
+│   │       ├── config.rs   # Config file I/O
+│   │       ├── http.rs     # Validated local HTTP proxy
+│   │       ├── systemd.rs  # User-service control
+│   │       └── mod.rs      # Module exports
+│   └── tauri.conf.json     # Tauri configuration
 ```
 
 ## Tauri Commands (Rust Backend)
@@ -88,9 +97,15 @@ egregore-web/
 | `systemd_restart()` | Restart service |
 | `systemd_enable()` | Enable auto-start |
 | `systemd_disable()` | Disable auto-start |
-| `systemd_install(path, data_dir)` | Create systemd service |
+| `systemd_install(egregore_path, data_dir)` | Create systemd service |
 | `systemd_uninstall()` | Remove systemd service |
 | `find_egregore_binary()` | Locate egregore binary |
+
+`src/api/client.ts` is the typed client layer over these raw Tauri commands. Its
+`ApiResponse<T>` models the daemon envelope; `unwrap` enforces successful,
+present data for `apiGetOrThrow` and `apiPostOrThrow`; and `ApiError` represents
+IPC or transport failures from the lower-level `apiGet`, `apiPost`, and
+`apiDelete` calls.
 
 ## State Management
 
@@ -102,7 +117,7 @@ egregore-web/
 
 **Zustand** (UI state):
 
-- `currentView`: Active panel (feed/tasks/traces/peers/schemas/groups/retention/topics/settings)
+- `currentView`: Active panel (`feed`/`tasks`/`assignments`/`traces`/`peers`/`schemas`/`retention`/`topics`/`bridge`/`settings`)
 - `searchQuery`: Feed search text
 - `selectedTaskId`: Currently selected task (for detail view)
 - `selectedTraceId`: Currently selected trace (for detail view)
@@ -114,12 +129,13 @@ egregore-web/
 |------|----------|
 | **Feed** | Feed browsing, full-text search, trace pivots |
 | **Tasks** | Task list, detail view, status tracking, offer observation |
+| **Assignments** | Pending identity-bound offers; explicit, confirmed RFC 0003 assignment commands; feed-authoritative reconciliation and retry |
 | **Traces** | Trace list, detail view, execution history |
 | **Peers** | Add/remove peers, mesh health, direct/transitive/replicated classification |
 | **Schemas** | List/register schemas, validate messages, toggle strict mode |
-| **Groups** | Consumer group CRUD, join/leave, offset management |
 | **Retention** | Policy CRUD (scope/age/count/bytes) |
 | **Topics** | Subscribe/unsubscribe, known topics |
+| **Bridge** | Composite transport health and per-child bridge queues |
 | **Settings** | Config editing, systemd control |
 
 ## CORS Bypass
@@ -137,9 +153,15 @@ All API calls route through Tauri commands.
 - `src/App.tsx` — View router, layout
 - `src/components/feed/ChatFeed.tsx` — Main feed with threading
 - `src/components/tasks/TaskPanel.tsx` — Task activity observer
+- `src/components/assignments/AssignmentsPanel.tsx` — Confirmed assignment workflow
+- `src/api/assignments.ts` — Assignment projection, command construction, and reconciliation
+- `src/stores/assignmentStore.ts` — Session assignment state
 - `src/components/settings/UnifiedPeersPanel.tsx` — Merged peer view
-- `src-tauri/src/commands.rs` — All Tauri commands
-- `tauri.conf.json` — Window config, CSP, build settings
+- `src/components/settings/BridgePanel.tsx` and `BridgeQueueRow.tsx` — Composite transport and queue health
+- `src/api/client.ts` — Typed API envelope and error handling
+- `src-tauri/src/commands/` — Tauri command modules
+- `src-tauri/src/lib.rs` — Tauri command registration
+- `src-tauri/tauri.conf.json` — Window config, CSP, build settings
 
 ## Dependencies
 

@@ -4,10 +4,9 @@
 // points operators at /v1/status.
 //
 // Amendment §C.14 expands scope beyond base plan: broker reachability,
-// per-stream lag (via /v1/transport/pending), per-group consumer health
-// (pointer to existing Groups panel), last-ack-per-author (via
-// /v1/transport/bus/authors), and a chain-gap metric pointer (the
-// actual metric lives in Prometheus — Step 27).
+// per-stream lag (via /v1/transport/pending), last-ack-per-author (via
+// /v1/transport/bus/authors), and a chain-gap metric pointer (the actual
+// metric lives in Prometheus — Step 27).
 
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, RefreshCw, Info } from 'lucide-react';

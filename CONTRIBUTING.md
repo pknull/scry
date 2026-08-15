@@ -12,8 +12,8 @@ Thanks for your interest. Scry is the desktop admin dashboard for [Thallus](../)
 ```bash
 git clone <repo>
 cd scry
-npm install
-npm run tauri dev
+pnpm install
+pnpm tauri dev
 ```
 
 Requires Node 20+, Rust stable, and Tauri system dependencies. See the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS.
@@ -23,9 +23,9 @@ Requires Node 20+, Rust stable, and Tauri system dependencies. See the [Tauri pr
 ### Frontend
 
 ```bash
-npm run lint
-npm run build
-npm run test:run
+pnpm lint
+pnpm build
+pnpm test:run
 ```
 
 ### Tauri Backend
@@ -41,7 +41,7 @@ CI also runs `cargo audit` on the Tauri backend.
 ## Areas That Need Care
 
 ### Systemd Control
-`src-tauri/src/commands.rs` exposes systemd control commands (start/stop/restart/install/uninstall). These are privileged operations. Don't add new privileged operations without discussion.
+`src-tauri/src/commands/systemd.rs` exposes systemd control commands (start/stop/restart/install/uninstall). These are privileged operations. Don't add new privileged operations without discussion.
 
 ### HTTP Proxy
 The Tauri backend proxies HTTP to the local egregore node to bypass CORS. Don't let this proxy reach arbitrary URLs — it should only target the configured local node.
@@ -62,25 +62,25 @@ The app edits the egregore config file directly. Any write path must back up the
 ### Rust (Tauri)
 - Rust 2021 edition
 - `cargo fmt`, `cargo clippy`
-- Keep commands in `src-tauri/src/commands.rs`; don't sprawl
+- Keep commands in the matching thematic module under `src-tauri/src/commands/` (`binary.rs`, `config.rs`, `http.rs`, or `systemd.rs`) and re-export them from `commands/mod.rs`
 
 ## Adding a New View
 
-1. Create the component under `src/components/` or `src/pages/`
+1. Create the component under the matching area in `src/components/`
 2. Add a route / nav entry if it needs top-level navigation
 3. Use TanStack Query for any server data
 4. Add a test for interactive logic
 
 ## Adding a New Tauri Command
 
-1. Add the command function to `src-tauri/src/commands.rs`
-2. Register it in `src-tauri/src/main.rs` invoke handler
+1. Add the command function to the matching module under `src-tauri/src/commands/`
+2. Re-export it from `src-tauri/src/commands/mod.rs` and register it in the invoke handler in `src-tauri/src/lib.rs`
 3. Add TypeScript bindings in `src/api/`
 4. Document the command in the function's doc comment
 
 ## Pull Request Process
 
-1. Fork and branch from `master`
+1. Fork and branch from `main`
 2. Make your change; add tests where practical
 3. Run both frontend and backend checklists
 4. Open a PR with a screenshot or short video for UI changes

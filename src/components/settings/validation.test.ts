@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   validatePeerAddress,
   validateTopicName,
-  validateGroupId,
   validateContentType,
   validatePositiveInteger,
   validateOptionalPositiveInteger,
@@ -143,80 +142,6 @@ describe('validateTopicName', () => {
       expect(validateTopicName('events#logs')).toBe('Use letters, numbers, dots, slashes, colons, underscores, or hyphens');
       expect(validateTopicName('events$test')).toBe('Use letters, numbers, dots, slashes, colons, underscores, or hyphens');
       expect(validateTopicName('events spaces')).toBe('Use letters, numbers, dots, slashes, colons, underscores, or hyphens');
-    });
-  });
-});
-
-describe('validateGroupId', () => {
-  describe('valid group IDs', () => {
-    it('accepts alphanumeric IDs', () => {
-      expect(validateGroupId('consumers')).toBeNull();
-      expect(validateGroupId('Consumer123')).toBeNull();
-      expect(validateGroupId('123group')).toBeNull();
-    });
-
-    it('accepts IDs with underscores and hyphens', () => {
-      expect(validateGroupId('consumer_group')).toBeNull();
-      expect(validateGroupId('consumer-group')).toBeNull();
-      expect(validateGroupId('consumer_group-1')).toBeNull();
-    });
-
-    it('accepts maximum length (64 chars)', () => {
-      const maxId = 'a'.repeat(64);
-      expect(validateGroupId(maxId)).toBeNull();
-    });
-
-    it('accepts single character IDs', () => {
-      expect(validateGroupId('a')).toBeNull();
-      expect(validateGroupId('1')).toBeNull();
-    });
-
-    it('trims whitespace', () => {
-      expect(validateGroupId('  consumers  ')).toBeNull();
-    });
-  });
-
-  describe('invalid group IDs', () => {
-    it('rejects empty input', () => {
-      expect(validateGroupId('')).toBe('Group ID is required');
-      expect(validateGroupId('   ')).toBe('Group ID is required');
-    });
-
-    it('rejects IDs exceeding 64 characters', () => {
-      const longId = 'a'.repeat(65);
-      expect(validateGroupId(longId)).toBe('Use only letters, numbers, hyphens, and underscores');
-    });
-
-    it('rejects IDs with disallowed characters', () => {
-      expect(validateGroupId('group.name')).toBe('Use only letters, numbers, hyphens, and underscores');
-      expect(validateGroupId('group/name')).toBe('Use only letters, numbers, hyphens, and underscores');
-      expect(validateGroupId('group:name')).toBe('Use only letters, numbers, hyphens, and underscores');
-      expect(validateGroupId('group name')).toBe('Use only letters, numbers, hyphens, and underscores');
-      expect(validateGroupId('group@name')).toBe('Use only letters, numbers, hyphens, and underscores');
-    });
-  });
-
-  describe('duplicate detection', () => {
-    it('rejects duplicate IDs (case-insensitive)', () => {
-      const existing = ['group1', 'group2'];
-      expect(validateGroupId('group1', existing)).toBe('A consumer group with this ID already exists');
-      expect(validateGroupId('GROUP1', existing)).toBe('A consumer group with this ID already exists');
-      expect(validateGroupId('Group1', existing)).toBe('A consumer group with this ID already exists');
-    });
-
-    it('allows non-duplicate IDs', () => {
-      const existing = ['group1', 'group2'];
-      expect(validateGroupId('group3', existing)).toBeNull();
-    });
-
-    it('handles empty existing list', () => {
-      expect(validateGroupId('group1', [])).toBeNull();
-    });
-
-    it('handles iterable input', () => {
-      const existing = new Set(['group1', 'group2']);
-      expect(validateGroupId('group1', existing)).toBe('A consumer group with this ID already exists');
-      expect(validateGroupId('group3', existing)).toBeNull();
     });
   });
 });
