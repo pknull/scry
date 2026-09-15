@@ -1,5 +1,7 @@
 {
-  "version": "2.0.0",
-  "initialized": "2026-08-08T19:00:18-07:00",
-  "plugin": "session"
+  "initialized": true,
+  "memory_version": 2,
+  "plugin": "session",
+  "project_id": "0e8bb7e4-20e4-4483-ba5f-ae0dd59b5188",
+  "version": "2.0.0"
 }
