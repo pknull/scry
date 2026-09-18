@@ -1,0 +1,34 @@
+# Accepted transitive risks, reviewed 2026-09-18. CI runs cargo audit from
+# src-tauri, so this file also governs the default local audit command.
+# Details, dependency paths, and removal criteria: ../../docs/security-audit.md.
+[advisories]
+ignore = [
+    # unic-ucd-ident 0.9.0: unmaintained, no patched release.
+    # Tauri -> tauri-utils -> urlpattern; await upstream replacement.
+    "RUSTSEC-2025-0100",
+    # unic-ucd-version 0.9.0: unmaintained, no patched release.
+    # urlpattern -> unic-ucd-ident -> unic-ucd-version; await replacement.
+    "RUSTSEC-2025-0098",
+    # unic-char-property 0.9.0: unmaintained, no patched release.
+    # urlpattern -> unic-ucd-ident -> unic-char-property; await replacement.
+    "RUSTSEC-2025-0081",
+    # unic-common 0.9.0: unmaintained, no patched release.
+    # unic-ucd-ident -> unic-ucd-version -> unic-common; await replacement.
+    "RUSTSEC-2025-0080",
+    # unic-char-range 0.9.0: unmaintained, no patched release.
+    # unic-ucd-ident / unic-char-property -> unic-char-range; await replacement.
+    "RUSTSEC-2025-0075",
+    # glib 0.18.5: VariantStrIter unsoundness; patched in >=0.20.0.
+    # Tauri's GTK3/WebKit stack requires glib 0.18. A coordinated breaking
+    # upstream stack migration is outside this task; no compatible fix exists.
+    "RUSTSEC-2024-0429",
+    # proc-macro-error 1.0.4: unmaintained, no patched release.
+    # GTK3's gtk3-macros / glib-macros require it; await upstream replacement.
+    "RUSTSEC-2024-0370",
+]
+
+[output]
+quiet = false
+# New warnings (including unmaintained/unsound crates) must also fail CI.
+# Only the individual advisory IDs above are accepted.
+deny = ["warnings"]
