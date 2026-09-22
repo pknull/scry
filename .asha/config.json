@@ -3,5 +3,6 @@
   "memory_version": 2,
   "plugin": "session",
   "project_id": "0e8bb7e4-20e4-4483-ba5f-ae0dd59b5188",
-  "version": "2.0.0"
+  "version": "2.0.0",
+  "memory_visibility": "private"
 }
