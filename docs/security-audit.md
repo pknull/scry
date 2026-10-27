@@ -63,6 +63,34 @@ ignored `Work/session-state/security-audit/` directory.
 - `npm run build`: passed (exit 0); TypeScript and Vite built 1,895 modules.
 - `git diff --check`: passed (exit 0).
 
+## 2026-10-27 update
+
+Reviewed against `main` at `7e79dc1`, cargo-audit 0.22.1, Rust 1.99.1, and
+RustSec database commit `99670cfc0bc574433034b75876a4b791ccaa2efb`
+(1,380 advisories). The baseline audit exited 1 with five vulnerabilities and
+one denied unsound warning, all with semver-compatible patched releases. Each
+was fixed by `cargo update -p CRATE --precise VERSION`; no ignore was added.
+
+| Advisory | Action | Evidence |
+| --- | --- | --- |
+| [RUSTSEC-2026-0346](https://rustsec.org/advisories/RUSTSEC-2026-0346.html) | Bumped `rustls` 0.23.45 -> **0.23.46**. | Derived `Debug` on client session values exposed TLS secrets. Patched `>=0.23.46`. |
+| [RUSTSEC-2026-0347](https://rustsec.org/advisories/RUSTSEC-2026-0347.html) | Same `rustls` bump. | Buffered application data sent to the outer server after ECH rejection. Patched `>=0.23.46`. |
+| [RUSTSEC-2026-0348](https://rustsec.org/advisories/RUSTSEC-2026-0348.html) | Same `rustls` bump. | Brotli certificate decompression could allocate 1 GiB pre-authentication; needs the non-default `brotli` feature, which this graph does not enable. Patched `>=0.23.46`. |
+| [RUSTSEC-2026-0349](https://rustsec.org/advisories/RUSTSEC-2026-0349.html) | Same `rustls` bump. | An unauthenticated ServerHello could downgrade later connections to classical key exchange. Patched `>=0.23.46`. |
+| [RUSTSEC-2026-0382](https://rustsec.org/advisories/RUSTSEC-2026-0382.html) | Bumped `rustls-webpki` 0.103.14 -> **0.103.16**. | Distrusted emSign intermediates could be accepted. Patched `>=0.103.16, <0.104.0-alpha.1`. |
+| [RUSTSEC-2026-0386](https://rustsec.org/advisories/RUSTSEC-2026-0386.html) | Bumped `tokio` 1.53.1 -> **1.53.3**. | Unsound: safe `AsyncFd` constructors violate I/O safety. Patched `>=1.51.6, <1.52.0` or `>=1.53.3`; scry does not call `AsyncFd`. |
+
+The rustls and rustls-webpki updates also re-pointed four existing
+`cfg(windows)` edges (`errno`, `rustix`, `tempfile`, `winapi-util`) from
+`windows-sys` 0.52.0 to 0.59.0. Both versions were already locked; no package
+version was added or removed.
+
+Baseline and updated tree, from `src-tauri` with `RUSTFLAGS=-Dwarnings`:
+`cargo fmt --all --check`, `cargo clippy --locked --all-targets --all-features
+-- -D warnings`, `cargo test --locked` (2 library tests) and `cargo build
+--locked` passed both times. `cargo audit` exited 1 on the baseline with
+exactly the six findings above and exits 0 on the updated lockfile.
+
 ## Outstanding
 
 The seven accepted risks remain until their upstream dependencies are replaced
