@@ -47,6 +47,15 @@ pnpm tauri dev     # Development (hot reload)
 pnpm tauri build   # Production build
 ```
 
+### System packages
+
+The Tauri backend links WebKitGTK, GTK, D-Bus and OpenSSL. On Debian or Ubuntu:
+
+```bash
+sudo apt-get install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+  librsvg2-dev libxdo-dev libssl-dev libdbus-1-dev pkg-config build-essential
+```
+
 ## Architecture
 
 The app uses Tauri's IPC bridge to bypass CORS restrictions:
