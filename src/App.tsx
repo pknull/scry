@@ -6,7 +6,6 @@ import { UnifiedPeersPanel } from './components/settings/UnifiedPeersPanel';
 import { SchemaPanel } from './components/settings/SchemaPanel';
 import { RetentionPoliciesPanel } from './components/settings/RetentionPoliciesPanel';
 import { TopicsPanel } from './components/settings/TopicsPanel';
-import { BridgePanel } from './components/settings/BridgePanel';
 import { SettingsPanel } from './components/settings/SettingsPanel';
 import { TaskPanel } from './components/tasks/TaskPanel';
 import { AssignmentsPanel } from './components/assignments/AssignmentsPanel';
@@ -37,7 +36,6 @@ function App() {
             {currentView === 'schemas' && <div className="h-full overflow-auto p-4"><SchemaPanel /></div>}
             {currentView === 'retention' && <div className="h-full overflow-auto p-4"><RetentionPoliciesPanel /></div>}
             {currentView === 'topics' && <div className="h-full overflow-auto p-4"><TopicsPanel /></div>}
-            {currentView === 'bridge' && <div className="h-full overflow-auto p-4"><BridgePanel /></div>}
             {currentView === 'settings' && <div className="h-full overflow-auto p-4"><SettingsPanel /></div>}
           </main>
         </div>

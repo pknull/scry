@@ -54,9 +54,7 @@ scry/
 │   │   ├── assignments/    # Operator assignment workflow
 │   │   ├── feed/           # ChatFeed, ChatMessage
 │   │   ├── layout/         # Sidebar, Header
-│   │   ├── settings/       # Peers, schemas, retention, topics, bridge, config
-│   │   │   ├── BridgePanel.tsx
-│   │   │   └── BridgeQueueRow.tsx
+│   │   ├── settings/       # Peers, schemas, retention, topics, config
 │   │   ├── tasks/          # Task view components
 │   │   ├── traces/         # Trace view components
 │   │   └── ui/             # Button, Card, Input, Toggle
@@ -117,7 +115,7 @@ IPC or transport failures from the lower-level `apiGet`, `apiPost`, and
 
 **Zustand** (UI state):
 
-- `currentView`: Active panel (`feed`/`tasks`/`assignments`/`traces`/`peers`/`schemas`/`retention`/`topics`/`bridge`/`settings`)
+- `currentView`: Active panel (`feed`/`tasks`/`assignments`/`traces`/`peers`/`schemas`/`retention`/`topics`/`settings`)
 - `searchQuery`: Feed search text
 - `selectedTaskId`: Currently selected task (for detail view)
 - `selectedTraceId`: Currently selected trace (for detail view)
@@ -135,7 +133,6 @@ IPC or transport failures from the lower-level `apiGet`, `apiPost`, and
 | **Schemas** | List/register schemas, validate messages, toggle strict mode |
 | **Retention** | Policy CRUD (scope/age/count/bytes) |
 | **Topics** | Subscribe/unsubscribe, known topics |
-| **Bridge** | Composite transport health and per-child bridge queues |
 | **Settings** | Config editing, systemd control |
 
 ## CORS Bypass
@@ -157,7 +154,6 @@ All API calls route through Tauri commands.
 - `src/api/assignments.ts` — Assignment projection, command construction, and reconciliation
 - `src/stores/assignmentStore.ts` — Session assignment state
 - `src/components/settings/UnifiedPeersPanel.tsx` — Merged peer view
-- `src/components/settings/BridgePanel.tsx` and `BridgeQueueRow.tsx` — Composite transport and queue health
 - `src/api/client.ts` — Typed API envelope and error handling
 - `src-tauri/src/commands/` — Tauri command modules
 - `src-tauri/src/lib.rs` — Tauri command registration

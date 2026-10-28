@@ -1,7 +1,6 @@
-// Phase 2 Wave 5 Step 26 — mirrors TransportHealth in
-// `egregore/src/transport/health.rs` (serde JSON layout). Absent on
-// pre-Phase-2 daemons: the field is omitted from /v1/status response
-// entirely, so keep it optional on the TypeScript side.
+// Mirrors TransportHealth in `egregore/src/transport/health.rs` (serde JSON
+// layout). /v1/status omits it when the daemon has no attached transport, so
+// keep it optional on the TypeScript side.
 export interface TransportHealth {
   connected: boolean;
   backend: string;
@@ -11,22 +10,6 @@ export interface TransportHealth {
   inflight_publishes: number;
   last_error?: string;
   children?: TransportHealth[];
-  bridge_queues?: BridgeQueuesHealth;
-}
-
-// Mirror of BridgeQueuesHealth (RFC 0002 §8.4).
-export interface BridgeQueuesHealth {
-  destination: string;
-  depth_total: number;
-  authors_backpressured: number;
-  authors_active: number;
-  backpressure_events_total: number;
-  self_echo_total: number;
-  oldest_queued_age_secs?: number;
-  publish_in_flight_age_secs?: number;
-  ack_on_error_total: number;
-  nats_redelivery_total: number;
-  last_error?: string;
 }
 
 export interface Status {
@@ -39,38 +22,8 @@ export interface Status {
   feed_count: number;
   follow_count: number;
   uptime_secs: number;
-  /// Phase 2 Wave 5 Step 24 — present when the daemon has at least one
-  /// attached transport. Omitted on test harnesses and pre-Phase-2 nodes.
+  /// Present when the daemon has at least one attached transport.
   transport?: TransportHealth;
-}
-
-// /v1/transport/pending response (amendment §C.14).
-export interface PendingRowDto {
-  message_hash: string;
-  author: string;
-  sequence: number;
-  enqueued_at: string;
-  last_attempt_at?: string;
-  attempt_count: number;
-  last_error?: string;
-}
-
-export interface PendingSummary {
-  transport_id: string;
-  count: number;
-  rows: PendingRowDto[];
-}
-
-// /v1/transport/bus/authors response (amendment §C.14).
-export interface BusAuthorRowDto {
-  author: string;
-  last_indexed_at: string;
-  author_seq: number;
-  stream_seq: number;
-}
-
-export interface BusAuthorsSummary {
-  rows: BusAuthorRowDto[];
 }
 
 export interface Identity {

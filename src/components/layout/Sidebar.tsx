@@ -10,7 +10,6 @@ import {
   ClipboardList,
   UserCheck,
   Activity,
-  Network,
 } from 'lucide-react';
 
 type View =
@@ -22,7 +21,6 @@ type View =
   | 'schemas'
   | 'retention'
   | 'topics'
-  | 'bridge'
   | 'settings';
 
 interface SidebarProps {
@@ -39,7 +37,6 @@ const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
   { id: 'schemas', label: 'Schemas', icon: FileJson },
   { id: 'retention', label: 'Retention', icon: Database },
   { id: 'topics', label: 'Topics', icon: Tag },
-  { id: 'bridge', label: 'Bridge', icon: Network },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

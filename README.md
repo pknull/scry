@@ -36,7 +36,6 @@ umbrella documentation at `docs/scry/architecture.md` and
 - **Schemas**: Register schemas, validate messages, and configure strict mode.
 - **Retention**: Manage retention policies and cleanup settings.
 - **Topics**: Manage topic subscriptions and known topics.
-- **Bridge**: Monitor composite transport health and per-child bridge queues.
 - **Settings**: Edit YAML configuration with backup and control the systemd user service.
 
 ## Build & Run

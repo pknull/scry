@@ -17,7 +17,6 @@ const viewTitles: Record<View, string> = {
   schemas: 'Schema Registry',
   retention: 'Retention Policies',
   topics: 'Topic Subscriptions',
-  bridge: 'Bridge Transport',
   settings: 'Settings',
 };
 

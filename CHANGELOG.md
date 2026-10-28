@@ -8,10 +8,6 @@ All notable changes to scry are documented here. The format follows [Keep a Chan
 
 - **Assignments.** Added pending identity-bound offers and an explicit operator-initiated Assign action that emits typed `assign_task/v1` commands under RFC 0003 behind single-use confirmation. Status reconciliation is feed-authoritative, includes an explicit `unknown` state, and Retry preserves `command_id`. This reintroduces operator-initiated assignment under the RFC 0003 protocol and supersedes the rationale for removing manual task assignment in 0.2.0.
 
-### Documentation
-
-- **Bridge.** Added the previously shipped Bridge panel to the current feature documentation. The panel reports composite transport health, per-child bridge queues, pending forwarding, and per-author bus activity.
-
 ### Security
 
 - Hardened the desktop boundary with an explicit Content Security Policy, minimal plugin permissions, and validation that restricts proxied API endpoints to supported local paths.
@@ -19,6 +15,7 @@ All notable changes to scry are documented here. The format follows [Keep a Chan
 ### Removed
 
 - **Consumer Groups.** Removed the panel, navigation entry, API client, DTOs, validation, and tests because the upstream Egregore backend deleted the groups API. Reintroduction requires an RFC.
+- **Bridge.** Removed the Bridge panel with its queue and transport-health rows, the navigation entry, the `/v1/transport/pending` and `/v1/transport/bus/authors` client calls, and their DTOs, because Egregore removed its bus and bridge transports (RFC 0001 §19).
 
 ## [0.2.0] - 2026-04-27
 
