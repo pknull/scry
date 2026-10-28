@@ -1,5 +1,3 @@
-import type { Hook } from './HooksEditor';
-
 const TOPIC_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/;
 const CONTENT_TYPE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/;
 const BRACKETED_IPV6_PATTERN = /^\[([0-9A-Fa-f:.]+)\]:(\d{1,5})$/;
@@ -136,49 +134,4 @@ export function validateAuthorId(value: string): string | null {
     return 'Author ID must look like @...ed25519';
   }
   return null;
-}
-
-export type HookFieldErrors = Partial<Record<'name' | 'on_message' | 'webhook_url' | 'timeout_secs' | 'max_retries' | 'retry_delay_secs' | 'transport', string>>;
-
-export function validateHook(hook: Hook): HookFieldErrors {
-  const errors: HookFieldErrors = {};
-  const scriptPath = hook.on_message?.trim() ?? '';
-  const webhookUrl = hook.webhook_url?.trim() ?? '';
-
-  if (!scriptPath && !webhookUrl) {
-    errors.transport = 'Provide either a script path or a webhook URL';
-  }
-
-  if (scriptPath) {
-    if (/[\r\n]/.test(scriptPath)) {
-      errors.on_message = 'Script path must be a single path or command';
-    } else if (!/^(\/|\.{1,2}\/|[A-Za-z0-9_./-])/.test(scriptPath)) {
-      errors.on_message = 'Script path must look like a valid command path';
-    }
-  }
-
-  if (webhookUrl) {
-    try {
-      const url = new URL(webhookUrl);
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-        errors.webhook_url = 'Webhook URL must start with http:// or https://';
-      }
-    } catch {
-      errors.webhook_url = 'Webhook URL must be a valid absolute URL';
-    }
-  }
-
-  if (hook.timeout_secs !== undefined && (!Number.isInteger(hook.timeout_secs) || hook.timeout_secs <= 0)) {
-    errors.timeout_secs = 'Timeout must be greater than zero';
-  }
-
-  if (hook.max_retries !== undefined && (!Number.isInteger(hook.max_retries) || hook.max_retries < 0)) {
-    errors.max_retries = 'Max retries must be zero or greater';
-  }
-
-  if (hook.retry_delay_secs !== undefined && (!Number.isInteger(hook.retry_delay_secs) || hook.retry_delay_secs <= 0)) {
-    errors.retry_delay_secs = 'Retry delay must be greater than zero';
-  }
-
-  return errors;
 }

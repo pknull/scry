@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
   Loader2, Save, AlertCircle, FileText, RotateCcw, ChevronDown, ChevronRight,
-  Network, Clock, Shield, Webhook, Info, Server, CheckCircle, Trash2
+  Network, Clock, Shield, Info, Server, CheckCircle, Trash2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -10,7 +10,6 @@ import { Input } from '../ui/Input';
 import { Toggle } from '../ui/Toggle';
 import { clsx } from 'clsx';
 import * as yaml from 'yaml';
-import { HooksEditor } from './HooksEditor';
 import { SystemdPanel } from './SystemdPanel';
 
 interface EgregoreConfig {
@@ -38,15 +37,6 @@ interface EgregoreConfig {
   retention_enabled?: boolean;
   retention_interval_secs?: number;
   tombstone_max_age_secs?: number;
-  hooks?: Array<{
-    name?: string;
-    on_message?: string;
-    webhook_url?: string;
-    timeout_secs?: number;
-    max_retries?: number;
-    retry_delay_secs?: number;
-    idempotent?: boolean;
-  }>;
 }
 
 interface SettingRowProps {
@@ -537,19 +527,6 @@ export function SettingsPanel() {
                 <span className="text-sm text-text-muted">sec</span>
               </div>
             </SettingRow>
-          </Section>
-
-          {/* Hooks */}
-          <Section
-            icon={<Webhook className="w-5 h-5" />}
-            title="Hooks"
-            description="Scripts or webhooks triggered on new messages"
-            defaultOpen={false}
-          >
-            <HooksEditor
-              hooks={config.hooks ?? []}
-              onChange={(hooks) => updateConfig('hooks', hooks)}
-            />
           </Section>
 
           {/* Systemd Service */}
